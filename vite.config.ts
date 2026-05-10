@@ -8,6 +8,7 @@ import { uniwind } from 'uniwind/vite';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 const sourceRoot = path.resolve(rootDir, 'src');
+const assetsRoot = path.resolve(rootDir, 'assets');
 const backgroundRoot = path.resolve(sourceRoot, 'background');
 const desktopRoot = path.resolve(rootDir, 'src/desktop');
 
@@ -29,9 +30,11 @@ export default defineConfig(({ mode }) => ({
     __DEV__: JSON.stringify(mode !== 'production')
   },
   resolve: {
-    alias: {
-      'react-native': 'react-native-web'
-    },
+    alias: [
+      { find: /^@\//, replacement: `${sourceRoot}/` },
+      { find: /^@assets\//, replacement: `${assetsRoot}/` },
+      { find: 'react-native', replacement: 'react-native-web' }
+    ],
     extensions: [
       '.web.tsx',
       '.web.ts',

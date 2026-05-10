@@ -1,7 +1,7 @@
 import * as React from 'react';
 
-import { type AppEvent, loadAppEvents, subscribeAppEvents } from '../../shared/app-events';
-import { deriveGameStatusFromEvents } from '../lib/game-status';
+import { deriveGameStatusFromEvents } from '@/desktop/lib/game-status';
+import { type AppEvent, loadAppEvents, subscribeAppEvents } from '@/shared/app-events';
 
 export function useActivityEvents(onGameStatusChange: (status: string) => void) {
   const [activityEvents, setActivityEvents] = React.useState<AppEvent[]>(() => loadAppEvents());

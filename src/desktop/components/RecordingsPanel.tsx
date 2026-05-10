@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { Button, Text } from '@valpro-labs/ui';
 
-import type { RecordingEntry } from '../../shared/recordings';
-import { formatDateTime, formatDuration } from '../lib/format';
-import { getRecordingStatusLabel, getRecordingSummary, openRecording } from '../lib/recording-presenters';
+import { formatDateTime, formatDuration } from '@/desktop/lib/format';
+import { getRecordingStatusLabel, getRecordingSummary, openRecording } from '@/desktop/lib/recording-presenters';
+import type { RecordingEntry } from '@/shared/recordings';
 
 export function RecordingsPanel({
   recordings,

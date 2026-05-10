@@ -1,16 +1,16 @@
-import { publishAppEvent } from '../shared/app-events';
-import type { RunningGameInfo } from '../shared/overwolf-games';
 import {
   GAME_EVENT_REGISTRATION_RETRY_MS,
   MAX_GAME_EVENT_REGISTRATION_TRIES,
   VALORANT_REQUIRED_FEATURES
-} from './constants';
-import { isValorantRunning, publishGameDetectionSnapshot } from './game-detection';
+} from '@/background/constants';
+import { isValorantRunning, publishGameDetectionSnapshot } from '@/background/game-detection';
 import {
   appendCurrentRecordingTimelineEvent,
   startValorantRecording,
   stopValorantRecording
-} from './recording-controller';
+} from '@/background/recording-controller';
+import { publishAppEvent } from '@/shared/app-events';
+import type { RunningGameInfo } from '@/shared/overwolf-games';
 
 type ValorantGameEventsInfo = Record<string, Record<string, unknown> | undefined>;
 

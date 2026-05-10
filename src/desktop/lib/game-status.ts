@@ -1,5 +1,5 @@
-import type { AppEvent } from '../../shared/app-events';
-import { getGameClassId, type RunningGameInfo } from '../../shared/overwolf-games';
+import type { AppEvent } from '@/shared/app-events';
+import { getGameClassId, type RunningGameInfo } from '@/shared/overwolf-games';
 
 export function deriveGameStatusFromEvents(events: AppEvent[]) {
   const lastValorantClosed = events.find((event) => event.type === 'valorant.closed');

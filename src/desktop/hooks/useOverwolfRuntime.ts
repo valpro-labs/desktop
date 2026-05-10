@@ -1,9 +1,9 @@
 import * as React from 'react';
 
-import { loadAppEvents } from '../../shared/app-events';
-import { getCurrentRunningGameInfo, isOverwolfAvailable } from '../../shared/overwolf-games';
-import { deriveGameStatusFromEvents, formatGameStatus } from '../lib/game-status';
-import { getCurrentWindow, getManifest } from '../lib/overwolf-window';
+import { deriveGameStatusFromEvents, formatGameStatus } from '@/desktop/lib/game-status';
+import { getCurrentWindow, getManifest } from '@/desktop/lib/overwolf-window';
+import { loadAppEvents } from '@/shared/app-events';
+import { getCurrentRunningGameInfo, isOverwolfAvailable } from '@/shared/overwolf-games';
 
 export type StatusKey = 'runtime' | 'manifest' | 'game';
 

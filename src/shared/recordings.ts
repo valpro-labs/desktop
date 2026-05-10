@@ -1,4 +1,4 @@
-import type { AppEventSeverity, AppEventType } from './app-events';
+import type { AppEventSeverity, AppEventType } from '@/shared/app-events';
 
 export const RECORDINGS_STORAGE_KEY = 'valpro-labs.recordings';
 export const RECORDINGS_CHANGE_EVENT = 'valpro-labs:recordings-change';

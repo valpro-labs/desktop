@@ -47,6 +47,17 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['./*', '../*'],
+              message: 'Use @/ for src imports or @assets/ for assets instead of relative paths.'
+            }
+          ]
+        }
+      ],
       '@typescript-eslint/consistent-type-imports': [
         'warn',
         {

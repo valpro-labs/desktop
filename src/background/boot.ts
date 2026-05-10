@@ -1,9 +1,9 @@
-import { getCurrentRunningGameInfo, isOverwolfAvailable } from '../shared/overwolf-games';
-import { GAME_DETECTION_POLL_MS } from './constants';
-import { publishGameDetectionSnapshot } from './game-detection';
-import { bindStreamingEvents } from './recording-controller';
-import { bindValorantEvents, syncValorantGameState } from './valorant-controller';
-import { getLaunchSource, openDesktopWindow } from './windows';
+import { GAME_DETECTION_POLL_MS } from '@/background/constants';
+import { publishGameDetectionSnapshot } from '@/background/game-detection';
+import { bindStreamingEvents } from '@/background/recording-controller';
+import { bindValorantEvents, syncValorantGameState } from '@/background/valorant-controller';
+import { getLaunchSource, openDesktopWindow } from '@/background/windows';
+import { getCurrentRunningGameInfo, isOverwolfAvailable } from '@/shared/overwolf-games';
 
 export async function boot() {
   if (!isOverwolfAvailable()) {

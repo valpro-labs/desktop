@@ -1,6 +1,6 @@
-import { publishAppEvent } from '../shared/app-events';
-import { getGameClassId, type RunningGameInfo } from '../shared/overwolf-games';
-import { VALORANT_GAME_CLASS_ID } from './constants';
+import { VALORANT_GAME_CLASS_ID } from '@/background/constants';
+import { publishAppEvent } from '@/shared/app-events';
+import { getGameClassId, type RunningGameInfo } from '@/shared/overwolf-games';
 
 let lastGameDetectionSignature: string | undefined;
 

@@ -84,6 +84,7 @@ button {
   height: 34px;
   justify-content: center;
   padding: 0;
+  position: relative;
   width: 42px;
 }
 
@@ -94,6 +95,79 @@ button {
 .window-button.danger:hover {
   background: var(--color-val-red);
   color: white;
+}
+
+.window-icon {
+  display: block;
+  height: 14px;
+  position: relative;
+  width: 14px;
+}
+
+.window-icon.minimize::before {
+  background: currentColor;
+  border-radius: 999px;
+  bottom: 2px;
+  content: "";
+  height: 2px;
+  left: 1px;
+  position: absolute;
+  width: 12px;
+}
+
+.window-icon.maximize::before {
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  content: "";
+  height: 10px;
+  inset: 1px;
+  position: absolute;
+  width: 12px;
+}
+
+.window-icon.restore::before,
+.window-icon.restore::after {
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  content: "";
+  height: 8px;
+  position: absolute;
+  width: 10px;
+}
+
+.window-icon.restore::before {
+  left: 3px;
+  top: 1px;
+}
+
+.window-icon.restore::after {
+  background: var(--color-card);
+  left: 0;
+  top: 4px;
+}
+
+.window-button:hover .window-icon.restore::after {
+  background: var(--color-accent);
+}
+
+.window-icon.close::before,
+.window-icon.close::after {
+  background: currentColor;
+  border-radius: 999px;
+  content: "";
+  height: 2px;
+  left: 0;
+  position: absolute;
+  top: 6px;
+  width: 14px;
+}
+
+.window-icon.close::before {
+  transform: rotate(45deg);
+}
+
+.window-icon.close::after {
+  transform: rotate(-45deg);
 }
 
 .shell {

@@ -21,9 +21,12 @@ const initialStatus: Record<StatusKey, string> = {
   game: 'Checking...'
 };
 
+const MAXIMIZED_WINDOW_STATE = 'maximized';
+
 export function useOverwolfRuntime() {
   const [statuses, setStatuses] = React.useState(initialStatus);
   const [logs, setLogs] = React.useState<LogEntry[]>([]);
+  const [isMaximized, setIsMaximized] = React.useState(false);
   const currentWindowId = React.useRef<string | null>(null);
   const logId = React.useRef(0);
 
@@ -73,6 +76,7 @@ export function useOverwolfRuntime() {
       try {
         const currentWindow = await getCurrentWindow();
         currentWindowId.current = currentWindow.id;
+        setIsMaximized(currentWindow.stateEx === MAXIMIZED_WINDOW_STATE);
         addLog('Current window ready', {
           id: currentWindow.id,
           name: currentWindow.name
@@ -103,11 +107,62 @@ export function useOverwolfRuntime() {
     initializeOverwolf();
   }, [addLog, refreshGameStatus, writeStatus]);
 
+  React.useEffect(() => {
+    if (!isOverwolfAvailable()) {
+      return;
+    }
+
+    const handleStateChanged = (event: overwolf.windows.WindowStateChangedEvent) => {
+      if (!currentWindowId.current || event.window_id !== currentWindowId.current) {
+        return;
+      }
+
+      setIsMaximized(event.window_state_ex === MAXIMIZED_WINDOW_STATE);
+    };
+
+    overwolf.windows.onStateChanged.addListener(handleStateChanged);
+
+    return () => {
+      overwolf.windows.onStateChanged.removeListener(handleStateChanged);
+    };
+  }, []);
+
   const minimizeWindow = React.useCallback(() => {
     if (isOverwolfAvailable() && currentWindowId.current) {
       overwolf.windows.minimize(currentWindowId.current);
     }
   }, []);
+
+  const toggleMaximizeWindow = React.useCallback(() => {
+    if (!isOverwolfAvailable() || !currentWindowId.current) {
+      return;
+    }
+
+    const windowId = currentWindowId.current;
+
+    overwolf.windows.getWindowState(windowId, (stateResult) => {
+      if (!stateResult.success) {
+        addLog('Unable to read window state', {
+          error: stateResult.error || 'unknown error'
+        });
+        return;
+      }
+
+      const shouldRestore = stateResult.window_state_ex === MAXIMIZED_WINDOW_STATE;
+      const updateWindow = shouldRestore ? overwolf.windows.restore : overwolf.windows.maximize;
+
+      updateWindow(windowId, (result) => {
+        if (!result.success) {
+          addLog(shouldRestore ? 'Unable to restore window' : 'Unable to maximize window', {
+            error: result.error || 'unknown error'
+          });
+          return;
+        }
+
+        setIsMaximized(!shouldRestore);
+      });
+    });
+  }, [addLog]);
 
   const closeApp = React.useCallback(() => {
     if (isOverwolfAvailable()) {
@@ -130,9 +185,11 @@ export function useOverwolfRuntime() {
   return {
     statuses,
     logs,
+    isMaximized,
     writeStatus,
     refreshGameStatus,
     minimizeWindow,
+    toggleMaximizeWindow,
     closeApp,
     dragMove,
     clearLogs

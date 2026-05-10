@@ -45,6 +45,8 @@
         "native_window": true,
         "transparent": false,
         "resizable": true,
+        "use_os_windowing": true,
+        "show_maximize": true,
         "show_in_taskbar": true,
         "override_on_update": true,
         "size": {

@@ -13,8 +13,18 @@ import { formatLogPayload } from '@/desktop/lib/format';
 import iconUrl from '@assets/icons/IconMouseOver.png';
 
 export function App() {
-  const { statuses, logs, writeStatus, refreshGameStatus, minimizeWindow, closeApp, dragMove, clearLogs } =
-    useOverwolfRuntime();
+  const {
+    statuses,
+    logs,
+    isMaximized,
+    writeStatus,
+    refreshGameStatus,
+    minimizeWindow,
+    toggleMaximizeWindow,
+    closeApp,
+    dragMove,
+    clearLogs
+  } = useOverwolfRuntime();
   const { recordings, selectedRecordingId, setSelectedRecordingId, refreshRecordings } = useRecordings();
   const { activityEvents, refreshActivityEvents } = useActivityEvents((status) => writeStatus('game', status));
 
@@ -35,11 +45,20 @@ export function App() {
         </div>
 
         <div className="window-actions">
-          <button type="button" className="window-button" onClick={minimizeWindow} aria-label="Minimize">
-            _
+          <button type="button" className="window-button" onClick={minimizeWindow} aria-label="Minimize" title="Minimize">
+            <span className="window-icon minimize" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="window-button"
+            onClick={toggleMaximizeWindow}
+            aria-label={isMaximized ? 'Restore' : 'Maximize'}
+            title={isMaximized ? 'Restore' : 'Maximize'}
+          >
+            <span className={`window-icon ${isMaximized ? 'restore' : 'maximize'}`} aria-hidden="true" />
           </button>
           <button type="button" className="window-button danger" onClick={closeApp} aria-label="Close">
-            x
+            <span className="window-icon close" aria-hidden="true" />
           </button>
         </div>
       </header>

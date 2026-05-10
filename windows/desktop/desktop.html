@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Valpro Labs Desktop</title>
+    <link rel="stylesheet" href="./desktop.css" />
+  </head>
+  <body>
+    <header class="titlebar" data-drag-region>
+      <div class="brand">
+        <img src="../../assets/icons/IconMouseOver.png" alt="" />
+        <div>
+          <strong>Valpro Labs</strong>
+          <span>Overwolf Native</span>
+        </div>
+      </div>
+
+      <div class="window-actions">
+        <button type="button" class="icon-button" data-action="minimize" aria-label="Minimize">_</button>
+        <button type="button" class="icon-button danger" data-action="close" aria-label="Close">x</button>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Desktop App Starter</p>
+          <h1>Native Overwolf app is ready.</h1>
+        </div>
+        <button type="button" data-action="refresh-game">Refresh</button>
+      </section>
+
+      <section class="status-grid" aria-label="Runtime status">
+        <article>
+          <span>Runtime</span>
+          <strong data-status="runtime">Checking...</strong>
+        </article>
+        <article>
+          <span>Manifest</span>
+          <strong data-status="manifest">Checking...</strong>
+        </article>
+        <article>
+          <span>Game</span>
+          <strong data-status="game">Checking...</strong>
+        </article>
+      </section>
+
+      <section class="panel">
+        <header>
+          <h2>Event Log</h2>
+          <button type="button" data-action="clear-log">Clear</button>
+        </header>
+        <ol class="log" data-log></ol>
+      </section>
+    </main>
+
+    <script type="module" src="./desktop.js"></script>
+  </body>
+</html>
+

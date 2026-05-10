@@ -1,25 +1,41 @@
 import * as React from "react";
 
-import { type RecordingEntry, loadRecordings, subscribeRecordings } from "../../shared/recordings";
+import { loadRecordings, subscribeRecordings } from "../../shared/recordings";
 
 export function useRecordings() {
-  const [recordings, setRecordings] = React.useState<RecordingEntry[]>(() => loadRecordings());
-  const [selectedRecordingId, setSelectedRecordingId] = React.useState<string | null>(null);
+  const [{ recordings, selectedRecordingId }, setRecordingsState] = React.useState(() => {
+    const initialRecordings = loadRecordings();
+    return {
+      recordings: initialRecordings,
+      selectedRecordingId: initialRecordings[0]?.id ?? null
+    };
+  });
 
   const refreshRecordings = React.useCallback((nextRecordings = loadRecordings()) => {
-    setRecordings(nextRecordings);
-    setSelectedRecordingId((currentId) => {
-      if (currentId && nextRecordings.some((recording) => recording.id === currentId)) {
-        return currentId;
-      }
+    setRecordingsState((current) => ({
+      recordings: nextRecordings,
+      selectedRecordingId:
+        current.selectedRecordingId && nextRecordings.some((recording) => recording.id === current.selectedRecordingId)
+          ? current.selectedRecordingId
+          : (nextRecordings[0]?.id ?? null)
+    }));
+  }, []);
 
-      return nextRecordings[0]?.id ?? null;
-    });
+  const setSelectedRecordingId = React.useCallback((recordingId: string) => {
+    setRecordingsState((current) => ({
+      ...current,
+      selectedRecordingId: recordingId
+    }));
   }, []);
 
   React.useEffect(() => {
-    refreshRecordings();
-    return subscribeRecordings(refreshRecordings);
+    const refreshHandle = window.setTimeout(refreshRecordings, 0);
+    const unsubscribe = subscribeRecordings(refreshRecordings);
+
+    return () => {
+      window.clearTimeout(refreshHandle);
+      unsubscribe();
+    };
   }, [refreshRecordings]);
 
   return {

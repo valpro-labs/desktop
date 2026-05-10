@@ -18,8 +18,13 @@ export function useActivityEvents(onGameStatusChange: (status: string) => void) 
   );
 
   React.useEffect(() => {
-    refreshActivityEvents();
-    return subscribeAppEvents(refreshActivityEvents);
+    const refreshHandle = window.setTimeout(refreshActivityEvents, 0);
+    const unsubscribe = subscribeAppEvents(refreshActivityEvents);
+
+    return () => {
+      window.clearTimeout(refreshHandle);
+      unsubscribe();
+    };
   }, [refreshActivityEvents]);
 
   return {

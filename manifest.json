@@ -18,7 +18,7 @@
     "start_window": "background",
     "windows": {
       "background": {
-        "file": "windows/background/background.html",
+        "file": "dist/windows/background/background.html",
         "background_optimization": true,
         "is_background_page": true
       },

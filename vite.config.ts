@@ -7,10 +7,12 @@ import { defineConfig } from "vite";
 import { uniwind } from "uniwind/vite";
 
 const rootDir = fileURLToPath(new URL(".", import.meta.url));
+const sourceRoot = path.resolve(rootDir, "src");
+const backgroundRoot = path.resolve(sourceRoot, "background");
 const desktopRoot = path.resolve(rootDir, "src/desktop");
 
 export default defineConfig(({ mode }) => ({
-  root: desktopRoot,
+  root: sourceRoot,
   base: "./",
   plugins: [
     react(),
@@ -53,10 +55,13 @@ export default defineConfig(({ mode }) => ({
     }
   },
   build: {
-    outDir: path.resolve(rootDir, "dist/windows/desktop"),
+    outDir: path.resolve(rootDir, "dist/windows"),
     emptyOutDir: true,
     rollupOptions: {
-      input: path.resolve(desktopRoot, "desktop.html")
+      input: [
+        path.resolve(backgroundRoot, "background.html"),
+        path.resolve(desktopRoot, "desktop.html")
+      ]
     }
   }
 }));

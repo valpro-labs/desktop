@@ -540,8 +540,11 @@ function createRecordingSettings(): OverwolfStreamSettings {
         game: { enable: true, volume: 100 }
       },
       video: {
-        auto_calc_kbps: true,
+        auto_calc_kbps: false,
         fps: 60,
+        width: 1920,
+        height: 1080,
+        max_kbps: 12000,
         include_full_size_video: true,
         game_window_capture: {
           enable_when_available: true,

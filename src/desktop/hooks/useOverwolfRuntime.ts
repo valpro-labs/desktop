@@ -2,6 +2,7 @@ import * as React from 'react';
 
 import { deriveGameStatusFromEvents, formatGameStatus } from '@/desktop/lib/game-status';
 import { getCurrentWindow, getManifest } from '@/desktop/lib/overwolf-window';
+
 import { loadAppEvents } from '@/shared/app-events';
 import { getCurrentRunningGameInfo, isOverwolfAvailable } from '@/shared/overwolf-games';
 

@@ -1,10 +1,9 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { uniwind } from 'uniwind/vite';
+import { defineConfig } from 'vite';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 const sourceRoot = path.resolve(rootDir, 'src');

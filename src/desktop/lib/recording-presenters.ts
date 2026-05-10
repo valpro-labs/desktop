@@ -1,4 +1,5 @@
 import { formatDateTime, formatDuration } from '@/desktop/lib/format';
+
 import type { RecordingEntry } from '@/shared/recordings';
 
 export function getRecordingStatusLabel(status: RecordingEntry['status']) {

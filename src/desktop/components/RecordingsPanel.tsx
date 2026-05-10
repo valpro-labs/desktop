@@ -3,6 +3,7 @@ import { Button, Text } from '@valpro-labs/ui';
 
 import { formatDateTime, formatDuration } from '@/desktop/lib/format';
 import { getRecordingStatusLabel, getRecordingSummary, openRecording } from '@/desktop/lib/recording-presenters';
+
 import type { RecordingEntry } from '@/shared/recordings';
 
 export function RecordingsPanel({

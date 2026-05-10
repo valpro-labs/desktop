@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import stylistic from '@stylistic/eslint-plugin';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
@@ -12,6 +13,30 @@ const airbnbStyleRules = {
   '@stylistic/semi': ['error', 'always']
 };
 
+const importOrderRules = {
+  'simple-import-sort/imports': [
+    'error',
+    {
+      groups: [
+        ['^\\u0000'],
+        ['^react$', '^react-dom$', '^react-native$', '^@?\\w'],
+        ['^@/[^/]+/components/'],
+        ['^@/[^/]+/hooks/'],
+        ['^@/[^/]+/lib/'],
+        ['^@/'],
+        ['^@assets/'],
+        ['^\\.']
+      ]
+    }
+  ],
+  'simple-import-sort/exports': 'error',
+  '@stylistic/padding-line-between-statements': [
+    'error',
+    { blankLine: 'always', prev: 'import', next: '*' },
+    { blankLine: 'any', prev: 'import', next: 'import' }
+  ]
+};
+
 export default tseslint.config(
   {
     ignores: ['dist', 'node_modules', 'src/desktop/uniwind-types.d.ts']
@@ -19,9 +44,13 @@ export default tseslint.config(
   {
     files: ['**/*.{js,ts,tsx}'],
     plugins: {
-      '@stylistic': stylistic
+      '@stylistic': stylistic,
+      'simple-import-sort': simpleImportSort
     },
-    rules: airbnbStyleRules
+    rules: {
+      ...airbnbStyleRules,
+      ...importOrderRules
+    }
   },
   {
     files: ['**/*.{ts,tsx}'],

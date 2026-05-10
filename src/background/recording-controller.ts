@@ -1,4 +1,5 @@
 import { createRecordingSettings } from '@/background/recording-settings';
+import type { AppEventSeverity, AppEventType } from '@/shared/app-events';
 import { publishAppEvent } from '@/shared/app-events';
 import {
   appendRecordingTimelineEvent,
@@ -6,8 +7,6 @@ import {
   updateRecording,
   upsertRecording
 } from '@/shared/recordings';
-
-import type { AppEventSeverity, AppEventType } from '@/shared/app-events';
 
 let activeStreamId: number | null = null;
 let isStartingRecording = false;

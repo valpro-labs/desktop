@@ -1,6 +1,7 @@
 import { Text } from '@valpro-labs/ui';
 
 import { formatTime, summarizePayload } from '@/desktop/lib/format';
+
 import type { AppEvent } from '@/shared/app-events';
 
 export function ActivityPanel({ events }: { events: AppEvent[] }) {

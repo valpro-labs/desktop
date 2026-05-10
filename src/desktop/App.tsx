@@ -1,13 +1,16 @@
 import { Button, Text } from '@valpro-labs/ui';
 
-import iconUrl from '@assets/icons/IconMouseOver.png';
 import { ActivityPanel } from '@/desktop/components/ActivityPanel';
 import { RecordingsPanel } from '@/desktop/components/RecordingsPanel';
 import { StatusCard } from '@/desktop/components/StatusCard';
+
 import { useActivityEvents } from '@/desktop/hooks/useActivityEvents';
 import { useOverwolfRuntime } from '@/desktop/hooks/useOverwolfRuntime';
 import { useRecordings } from '@/desktop/hooks/useRecordings';
+
 import { formatLogPayload } from '@/desktop/lib/format';
+
+import iconUrl from '@assets/icons/IconMouseOver.png';
 
 export function App() {
   const { statuses, logs, writeStatus, refreshGameStatus, minimizeWindow, closeApp, dragMove, clearLogs } =

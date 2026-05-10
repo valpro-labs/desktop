@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import { deriveGameStatusFromEvents } from '@/desktop/lib/game-status';
+
 import { type AppEvent, loadAppEvents, subscribeAppEvents } from '@/shared/app-events';
 
 export function useActivityEvents(onGameStatusChange: (status: string) => void) {

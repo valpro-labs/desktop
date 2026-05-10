@@ -2,11 +2,11 @@
   "manifest_version": 1,
   "type": "WebApp",
   "meta": {
-    "name": "Valpro Labs Desktop",
-    "author": "Valpro Labs",
+    "name": "VALPRO",
+    "author": "VALPRO LABS",
     "version": "0.1.0",
     "minimum-overwolf-version": "0.199.0.15",
-    "description": "Valpro Labs Overwolf Native desktop app starter.",
+    "description": "VALPRO Overwolf Native desktop app.",
     "icon": "assets/icons/IconMouseOver.png",
     "icon_gray": "assets/icons/IconMouseNormal.png",
     "window_icon": "assets/icons/IconMouseOver.png"

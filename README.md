@@ -1,4 +1,4 @@
-# Valpro Labs Desktop
+# VALPRO
 
 Overwolf Native starter using React, Vite, and `@valpro-labs/ui`.
 
@@ -29,7 +29,7 @@ The background and React desktop windows are built into `dist/windows/`, which i
 3. Open Settings, then the Packages or Development Options screen.
 4. Choose Load unpacked extension.
 5. Select this folder: `f:\Code\valpro-labs\desktop`.
-6. Launch `Valpro Labs Desktop` from the Overwolf dock.
+6. Launch `VALPRO` from the Overwolf dock.
 
 The app starts from `dist/windows/background/background.html`, then opens the built React desktop window declared in `manifest.json`.
 When VALORANT launches, Overwolf also starts the background window minimized, registers VALORANT game events, and records only while a match is active.

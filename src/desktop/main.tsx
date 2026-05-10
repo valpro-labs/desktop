@@ -138,7 +138,7 @@ function App() {
         const manifest = await getManifest();
         writeStatus(
           "manifest",
-          `${manifest.meta?.name || "Valpro Labs Desktop"} ${manifest.meta?.version || ""}`.trim()
+          `${manifest.meta?.name || "VALPRO"} ${manifest.meta?.version || ""}`.trim()
         );
         addLog("Manifest loaded", {
           name: manifest.meta?.name,
@@ -215,8 +215,8 @@ function App() {
         <div className="brand">
           <img src={iconUrl} alt="" />
           <div className="brand-copy">
-            <Text className="text-base font-bold leading-tight">Valpro Labs</Text>
-            <Text className="text-muted-foreground text-xs leading-tight">React + @valpro-labs/ui</Text>
+            <Text className="text-base font-bold leading-tight">VALPRO</Text>
+            <Text className="text-muted-foreground text-xs leading-tight">VALPRO LABS</Text>
           </div>
         </div>
 

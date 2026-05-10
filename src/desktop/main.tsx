@@ -5,7 +5,7 @@ import { Button, Text } from "@valpro-labs/ui";
 
 import iconUrl from "../../assets/icons/IconMouseOver.png";
 import { type AppEvent, loadAppEvents, subscribeAppEvents } from "../shared/app-events";
-import { getCurrentRunningGameInfo } from "../shared/overwolf-games";
+import { getCurrentRunningGameInfo, getGameClassId } from "../shared/overwolf-games";
 import { type RecordingEntry, loadRecordings, subscribeRecordings } from "../shared/recordings";
 import "./styles.css";
 
@@ -100,12 +100,12 @@ function App() {
 
     const { gameInfo: game, raw } = await getCurrentRunningGameInfo();
     if (game?.isRunning) {
-      writeStatus("game", `${game.title || "Running game"} (${game.classId ?? game.id})`);
+      writeStatus("game", formatGameStatus(game));
       addLog("Running game detected", raw);
       return;
     }
 
-    writeStatus("game", "No supported game running");
+    writeStatus("game", deriveGameStatusFromEvents(loadAppEvents()) ?? "No supported game running");
     addLog("No supported game running", raw);
   }, [addLog, writeStatus]);
 
@@ -169,17 +169,25 @@ function App() {
       });
     };
 
+    const refreshActivityEvents = (nextEvents = loadAppEvents()) => {
+      setActivityEvents(nextEvents);
+      const derivedGameStatus = deriveGameStatusFromEvents(nextEvents);
+      if (derivedGameStatus) {
+        writeStatus("game", derivedGameStatus);
+      }
+    };
+
     refreshRecordings();
-    setActivityEvents(loadAppEvents());
+    refreshActivityEvents();
 
     const unsubscribeRecordings = subscribeRecordings(refreshRecordings);
-    const unsubscribeAppEvents = subscribeAppEvents(setActivityEvents);
+    const unsubscribeAppEvents = subscribeAppEvents(refreshActivityEvents);
 
     return () => {
       unsubscribeRecordings();
       unsubscribeAppEvents();
     };
-  }, []);
+  }, [writeStatus]);
 
   const minimizeWindow = React.useCallback(() => {
     if (window.overwolf && currentWindowId.current) {
@@ -496,6 +504,85 @@ function openRecording(recording: RecordingEntry) {
   if (target) {
     window.open(target, "_blank");
   }
+}
+
+function deriveGameStatusFromEvents(events: AppEvent[]) {
+  const lastValorantClosed = events.find((event) => event.type === "valorant.closed");
+  const lastValorantActive = events.find(isValorantActiveEvent);
+
+  if (lastValorantActive && isNewerThan(lastValorantActive, lastValorantClosed)) {
+    return getValorantStatusLabel(lastValorantActive);
+  }
+
+  const lastGameDetection = events.find((event) => event.type === "game.detection");
+  if (!lastGameDetection) {
+    return null;
+  }
+
+  const gameInfo = getGameInfoFromPayload(lastGameDetection.payload);
+  if (gameInfo?.isRunning) {
+    return formatGameStatus(gameInfo);
+  }
+
+  return "No supported game running";
+}
+
+function isValorantActiveEvent(event: AppEvent) {
+  return (
+    event.type === "valorant.detected" ||
+    event.type === "valorant.events.registered" ||
+    event.type === "valorant.game-event" ||
+    event.type === "valorant.info-update" ||
+    event.type === "valorant.match.started" ||
+    event.type === "recording.starting" ||
+    event.type === "recording.started" ||
+    event.type === "recording.stopping"
+  );
+}
+
+function getValorantStatusLabel(event: AppEvent) {
+  if (event.type === "valorant.events.registered") {
+    return "VALORANT events ready";
+  }
+
+  if (event.type === "valorant.match.started") {
+    return "VALORANT match active";
+  }
+
+  if (event.type.startsWith("recording.")) {
+    return "VALORANT recording";
+  }
+
+  return "VALORANT (21640)";
+}
+
+function isNewerThan(event: AppEvent, comparedEvent?: AppEvent) {
+  if (!comparedEvent) {
+    return true;
+  }
+
+  return new Date(event.timestamp).getTime() > new Date(comparedEvent.timestamp).getTime();
+}
+
+function getGameInfoFromPayload(payload: unknown): OverwolfGameInfo | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const candidate = payload as { gameInfo?: unknown; isRunning?: unknown };
+  if (candidate.gameInfo && typeof candidate.gameInfo === "object") {
+    return candidate.gameInfo as OverwolfGameInfo;
+  }
+
+  if (typeof candidate.isRunning === "boolean") {
+    return candidate as OverwolfGameInfo;
+  }
+
+  return null;
+}
+
+function formatGameStatus(gameInfo: OverwolfGameInfo) {
+  return `${gameInfo.title || "Running game"} (${getGameClassId(gameInfo) ?? gameInfo.id ?? "unknown"})`;
 }
 
 createRoot(document.getElementById("root")!).render(

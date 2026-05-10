@@ -1,7 +1,6 @@
 @import "@valpro-labs/ui/styles/global.css";
 
 @source ".";
-@source "../../node_modules/@valpro-labs/ui/dist";
 
 :root {
   color-scheme: dark;

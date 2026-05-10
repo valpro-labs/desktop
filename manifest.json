@@ -12,9 +12,22 @@
     "window_icon": "assets/icons/IconMouseOver.png"
   },
   "permissions": [
-    "GameInfo"
+    "GameInfo",
+    "Streaming",
+    "Tray"
   ],
   "data": {
+    "game_events": [21640],
+    "launch_events": [
+      {
+        "event": "GameLaunch",
+        "event_data": {
+          "game_ids": [21640],
+          "wait_for_stable_framerate": 30
+        },
+        "start_minimized": true
+      }
+    ],
     "start_window": "background",
     "windows": {
       "background": {

@@ -1,9 +1,9 @@
-import type { AppEventSeverity, AppEventType } from "./app-events";
+import type { AppEventSeverity, AppEventType } from './app-events';
 
-export const RECORDINGS_STORAGE_KEY = "valpro-labs.recordings";
-export const RECORDINGS_CHANGE_EVENT = "valpro-labs:recordings-change";
+export const RECORDINGS_STORAGE_KEY = 'valpro-labs.recordings';
+export const RECORDINGS_CHANGE_EVENT = 'valpro-labs:recordings-change';
 
-export type RecordingStatus = "starting" | "recording" | "stopping" | "saved" | "failed";
+export type RecordingStatus = 'starting' | 'recording' | 'stopping' | 'saved' | 'failed';
 
 export interface RecordingTimelineEvent {
   id: string;
@@ -18,7 +18,7 @@ export interface RecordingTimelineEvent {
 export interface RecordingEntry {
   id: string;
   title: string;
-  game: "VALORANT";
+  game: 'VALORANT';
   status: RecordingStatus;
   startedAt: string;
   endedAt?: string;
@@ -76,8 +76,8 @@ export function updateRecording(id: string, patch: Partial<RecordingEntry>) {
 
 export function appendRecordingTimelineEvent(
   recordingId: string,
-  event: Omit<RecordingTimelineEvent, "id" | "timestamp"> &
-    Partial<Pick<RecordingTimelineEvent, "id" | "timestamp">>
+  event: Omit<RecordingTimelineEvent, 'id' | 'timestamp'> &
+    Partial<Pick<RecordingTimelineEvent, 'id' | 'timestamp'>>
 ) {
   const current = loadRecordings();
   const existing = current.find((recording) => recording.id === recordingId);
@@ -113,22 +113,22 @@ export function subscribeRecordings(listener: (recordings: RecordingEntry[]) => 
     }
   };
 
-  window.addEventListener("storage", handleStorage);
+  window.addEventListener('storage', handleStorage);
   window.addEventListener(RECORDINGS_CHANGE_EVENT, handleChange);
 
   return () => {
-    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener('storage', handleStorage);
     window.removeEventListener(RECORDINGS_CHANGE_EVENT, handleChange);
   };
 }
 
 function isRecordingEntry(value: unknown): value is RecordingEntry {
-  if (!value || typeof value !== "object") {
+  if (!value || typeof value !== 'object') {
     return false;
   }
 
   const recording = value as RecordingEntry;
-  return typeof recording.id === "string" && typeof recording.startedAt === "string";
+  return typeof recording.id === 'string' && typeof recording.startedAt === 'string';
 }
 
 function sortNewestFirst(a: RecordingEntry, b: RecordingEntry) {

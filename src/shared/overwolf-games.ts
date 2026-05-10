@@ -9,7 +9,7 @@ export interface RunningGameSnapshot {
 }
 
 export function isOverwolfAvailable() {
-  return typeof overwolf !== "undefined";
+  return typeof overwolf !== 'undefined';
 }
 
 export function getCurrentRunningGameInfo() {
@@ -19,7 +19,7 @@ export function getCurrentRunningGameInfo() {
       return;
     }
 
-    if (typeof overwolf.games.getRunningGameInfo2 === "function") {
+    if (typeof overwolf.games.getRunningGameInfo2 === 'function') {
       overwolf.games.getRunningGameInfo2((result) => {
         resolve({
           gameInfo: result.gameInfo ?? null,
@@ -43,12 +43,12 @@ export function getGameClassId(gameInfo: RunningGameInfo | null) {
     return undefined;
   }
 
-  if (typeof gameInfo.classId === "number") {
+  if (typeof gameInfo.classId === 'number') {
     return gameInfo.classId;
   }
 
   const gameId = (gameInfo as RunningGameInfo & { gameId?: number }).gameId ?? gameInfo.id;
-  if (typeof gameId === "number") {
+  if (typeof gameId === 'number') {
     return Math.floor(gameId / 10);
   }
 

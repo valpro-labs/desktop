@@ -1,6 +1,6 @@
 export function createRecordingSettings(): overwolf.streaming.StreamSettings {
   return {
-    provider: "VideoRecorder" as overwolf.streaming.enums.StreamingProvider,
+    provider: 'VideoRecorder' as overwolf.streaming.enums.StreamingProvider,
     settings: {
       audio: {
         mic: { enable: false, volume: 0 },

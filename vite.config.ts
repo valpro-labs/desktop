@@ -1,66 +1,66 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
-import { uniwind } from "uniwind/vite";
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+import { uniwind } from 'uniwind/vite';
 
-const rootDir = fileURLToPath(new URL(".", import.meta.url));
-const sourceRoot = path.resolve(rootDir, "src");
-const backgroundRoot = path.resolve(sourceRoot, "background");
-const desktopRoot = path.resolve(rootDir, "src/desktop");
+const rootDir = fileURLToPath(new URL('.', import.meta.url));
+const sourceRoot = path.resolve(rootDir, 'src');
+const backgroundRoot = path.resolve(sourceRoot, 'background');
+const desktopRoot = path.resolve(rootDir, 'src/desktop');
 
 export default defineConfig(({ mode }) => ({
   root: sourceRoot,
-  base: "./",
+  base: './',
   plugins: [
     react(),
     tailwindcss(),
     uniwind({
-      cssEntryFile: path.resolve(desktopRoot, "styles.css"),
-      dtsFile: path.resolve(rootDir, "src/desktop/uniwind-types.d.ts")
+      cssEntryFile: path.resolve(desktopRoot, 'styles.css'),
+      dtsFile: path.resolve(rootDir, 'src/desktop/uniwind-types.d.ts')
     })
   ],
   css: {
-    transformer: "postcss"
+    transformer: 'postcss'
   },
   define: {
-    __DEV__: JSON.stringify(mode !== "production")
+    __DEV__: JSON.stringify(mode !== 'production')
   },
   resolve: {
     alias: {
-      "react-native": "react-native-web"
+      'react-native': 'react-native-web'
     },
     extensions: [
-      ".web.tsx",
-      ".web.ts",
-      ".web.jsx",
-      ".web.js",
-      ".tsx",
-      ".ts",
-      ".jsx",
-      ".js",
-      ".mjs",
-      ".json"
+      '.web.tsx',
+      '.web.ts',
+      '.web.jsx',
+      '.web.js',
+      '.tsx',
+      '.ts',
+      '.jsx',
+      '.js',
+      '.mjs',
+      '.json'
     ]
   },
   optimizeDeps: {
-    include: ["@rn-primitives/progress", "@rn-primitives/slot"],
+    include: ['@rn-primitives/progress', '@rn-primitives/slot'],
     esbuildOptions: {
       loader: {
-        ".js": "jsx",
-        ".mjs": "jsx"
+        '.js': 'jsx',
+        '.mjs': 'jsx'
       }
     }
   },
   build: {
-    outDir: path.resolve(rootDir, "dist/windows"),
+    outDir: path.resolve(rootDir, 'dist/windows'),
     emptyOutDir: true,
     rollupOptions: {
       input: [
-        path.resolve(backgroundRoot, "background.html"),
-        path.resolve(desktopRoot, "desktop.html")
+        path.resolve(backgroundRoot, 'background.html'),
+        path.resolve(desktopRoot, 'desktop.html')
       ]
     }
   }

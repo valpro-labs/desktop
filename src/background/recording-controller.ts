@@ -1,13 +1,13 @@
-import { publishAppEvent } from "../shared/app-events";
+import { publishAppEvent } from '../shared/app-events';
 import {
   appendRecordingTimelineEvent,
   createRecordingId,
   updateRecording,
   upsertRecording
-} from "../shared/recordings";
-import { createRecordingSettings } from "./recording-settings";
+} from '../shared/recordings';
+import { createRecordingSettings } from './recording-settings';
 
-import type { AppEventSeverity, AppEventType } from "../shared/app-events";
+import type { AppEventSeverity, AppEventType } from '../shared/app-events';
 
 let activeStreamId: number | null = null;
 let isStartingRecording = false;
@@ -17,25 +17,25 @@ let currentRecordingStartedAtMs: number | null = null;
 
 export function bindStreamingEvents() {
   overwolf.streaming.onStartStreaming.addListener((event) => {
-    console.info("Recording started", event);
+    console.info('Recording started', event);
   });
 
   overwolf.streaming.onStopStreaming.addListener((event) => {
-    console.info("Recording stopped", event);
+    console.info('Recording stopped', event);
     if (!isStoppingRecording) {
       activeStreamId = null;
     }
   });
 
   overwolf.streaming.onStreamingError.addListener((event) => {
-    console.error("Recording error", event);
+    console.error('Recording error', event);
     activeStreamId = null;
     isStartingRecording = false;
     isStoppingRecording = false;
   });
 
   overwolf.streaming.onStreamingWarning.addListener((event) => {
-    console.warn("Recording warning", event);
+    console.warn('Recording warning', event);
   });
 }
 
@@ -48,68 +48,68 @@ export function startValorantRecording(reason: string, shouldKeepRecording: () =
   currentRecordingStartedAtMs = Date.now();
   const startedAt = new Date(currentRecordingStartedAtMs).toISOString();
   isStartingRecording = true;
-  console.info("Starting VALORANT match recording", { reason });
+  console.info('Starting VALORANT match recording', { reason });
   upsertRecording({
     id: currentRecordingId,
-    title: "VALORANT Match",
-    game: "VALORANT",
-    status: "starting",
+    title: 'VALORANT Match',
+    game: 'VALORANT',
+    status: 'starting',
     startedAt,
     events: [
       {
         id: `recording.timeline-start-${currentRecordingStartedAtMs}`,
-        type: "recording.starting",
-        title: "Recording requested",
+        type: 'recording.starting',
+        title: 'Recording requested',
         timestamp: startedAt,
         offsetMs: 0,
-        severity: "info",
+        severity: 'info',
         payload: { reason }
       }
     ]
   });
   publishAppEvent({
-    type: "recording.starting",
-    title: "Starting recording",
-    source: "background",
-    severity: "info",
+    type: 'recording.starting',
+    title: 'Starting recording',
+    source: 'background',
+    severity: 'info',
     recordingId: currentRecordingId,
-    game: "VALORANT",
+    game: 'VALORANT',
     payload: { reason }
   });
 
   overwolf.streaming.start(createRecordingSettings(), (result) => {
     isStartingRecording = false;
 
-    if (!result.success || typeof result.stream_id !== "number") {
-      console.error("Unable to start VALORANT recording", result);
-      markCurrentRecordingFailed(result.error || "Unable to start recording");
+    if (!result.success || typeof result.stream_id !== 'number') {
+      console.error('Unable to start VALORANT recording', result);
+      markCurrentRecordingFailed(result.error || 'Unable to start recording');
       return;
     }
 
     activeStreamId = result.stream_id;
     updateCurrentRecording({
-      status: "recording",
+      status: 'recording',
       streamId: activeStreamId
     });
     appendCurrentRecordingTimelineEvent({
-      type: "recording.started",
-      title: "Recording started",
-      severity: "success",
+      type: 'recording.started',
+      title: 'Recording started',
+      severity: 'success',
       payload: { streamId: activeStreamId }
     });
     publishAppEvent({
-      type: "recording.started",
-      title: "Recording started",
-      source: "background",
-      severity: "success",
+      type: 'recording.started',
+      title: 'Recording started',
+      source: 'background',
+      severity: 'success',
       recordingId: currentRecordingId ?? undefined,
-      game: "VALORANT",
+      game: 'VALORANT',
       payload: { streamId: activeStreamId }
     });
-    console.info("VALORANT recording stream ready", { streamId: activeStreamId });
+    console.info('VALORANT recording stream ready', { streamId: activeStreamId });
 
     if (!shouldKeepRecording()) {
-      stopValorantRecording("VALORANT match ended before recording startup completed");
+      stopValorantRecording('VALORANT match ended before recording startup completed');
     }
   });
 }
@@ -122,24 +122,24 @@ export function stopValorantRecording(reason: string) {
   const streamId = activeStreamId;
   activeStreamId = null;
   isStoppingRecording = true;
-  console.info("Stopping VALORANT recording", { streamId, reason });
+  console.info('Stopping VALORANT recording', { streamId, reason });
   updateCurrentRecording({
-    status: "stopping",
+    status: 'stopping',
     stopReason: reason
   });
   appendCurrentRecordingTimelineEvent({
-    type: "recording.stopping",
-    title: "Recording stopping",
-    severity: "info",
+    type: 'recording.stopping',
+    title: 'Recording stopping',
+    severity: 'info',
     payload: { streamId, reason }
   });
   publishAppEvent({
-    type: "recording.stopping",
-    title: "Stopping recording",
-    source: "background",
-    severity: "info",
+    type: 'recording.stopping',
+    title: 'Stopping recording',
+    source: 'background',
+    severity: 'info',
     recordingId: currentRecordingId ?? undefined,
-    game: "VALORANT",
+    game: 'VALORANT',
     payload: { streamId, reason }
   });
 
@@ -147,15 +147,15 @@ export function stopValorantRecording(reason: string) {
     isStoppingRecording = false;
 
     if (result && !result.success) {
-      console.error("Unable to stop VALORANT recording", result);
-      markCurrentRecordingFailed(result.error || "Unable to stop recording");
+      console.error('Unable to stop VALORANT recording', result);
+      markCurrentRecordingFailed(result.error || 'Unable to stop recording');
       return;
     }
 
     const stopResult = getStopStreamingResult(result);
 
     updateCurrentRecording({
-      status: "saved",
+      status: 'saved',
       endedAt: new Date().toISOString(),
       durationMs: stopResult?.duration,
       streamId: result?.stream_id ?? streamId,
@@ -164,9 +164,9 @@ export function stopValorantRecording(reason: string) {
       stopReason: reason
     });
     appendCurrentRecordingTimelineEvent({
-      type: "recording.saved",
-      title: "Recording saved",
-      severity: "success",
+      type: 'recording.saved',
+      title: 'Recording saved',
+      severity: 'success',
       payload: {
         streamId: result?.stream_id ?? streamId,
         url: stopResult?.url,
@@ -176,12 +176,12 @@ export function stopValorantRecording(reason: string) {
       }
     });
     publishAppEvent({
-      type: "recording.saved",
-      title: "Recording saved",
-      source: "background",
-      severity: "success",
+      type: 'recording.saved',
+      title: 'Recording saved',
+      source: 'background',
+      severity: 'success',
       recordingId: currentRecordingId ?? undefined,
-      game: "VALORANT",
+      game: 'VALORANT',
       payload: {
         streamId: result?.stream_id ?? streamId,
         url: stopResult?.url,
@@ -192,7 +192,7 @@ export function stopValorantRecording(reason: string) {
     });
     currentRecordingId = null;
     currentRecordingStartedAtMs = null;
-    console.info("VALORANT recording saved", result);
+    console.info('VALORANT recording saved', result);
   });
 }
 
@@ -223,7 +223,7 @@ export function appendCurrentRecordingTimelineEvent({
 function getStopStreamingResult(
   result: overwolf.streaming.StreamResult | overwolf.streaming.StopStreamingResult | undefined
 ) {
-  if (result && "file_path" in result) {
+  if (result && 'file_path' in result) {
     return result;
   }
 
@@ -241,23 +241,23 @@ function updateCurrentRecording(patch: Parameters<typeof updateRecording>[1]) {
 function markCurrentRecordingFailed(error: string) {
   const recordingId = currentRecordingId;
   appendCurrentRecordingTimelineEvent({
-    type: "recording.failed",
-    title: "Recording failed",
-    severity: "error",
+    type: 'recording.failed',
+    title: 'Recording failed',
+    severity: 'error',
     payload: { error }
   });
   updateCurrentRecording({
-    status: "failed",
+    status: 'failed',
     endedAt: new Date().toISOString(),
     error
   });
   publishAppEvent({
-    type: "recording.failed",
-    title: "Recording failed",
-    source: "background",
-    severity: "error",
+    type: 'recording.failed',
+    title: 'Recording failed',
+    source: 'background',
+    severity: 'error',
     recordingId: recordingId ?? undefined,
-    game: "VALORANT",
+    game: 'VALORANT',
     payload: { error }
   });
   currentRecordingId = null;

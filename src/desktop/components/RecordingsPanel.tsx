@@ -1,9 +1,9 @@
-import * as React from "react";
-import { Button, Text } from "@valpro-labs/ui";
+import * as React from 'react';
+import { Button, Text } from '@valpro-labs/ui';
 
-import type { RecordingEntry } from "../../shared/recordings";
-import { formatDateTime, formatDuration } from "../lib/format";
-import { getRecordingStatusLabel, getRecordingSummary, openRecording } from "../lib/recording-presenters";
+import type { RecordingEntry } from '../../shared/recordings';
+import { formatDateTime, formatDuration } from '../lib/format';
+import { getRecordingStatusLabel, getRecordingSummary, openRecording } from '../lib/recording-presenters';
 
 export function RecordingsPanel({
   recordings,
@@ -20,7 +20,7 @@ export function RecordingsPanel({
   const selectedRecording =
     recordings.find((recording) => recording.id === selectedRecordingId) ?? recordings[0] ?? null;
   const activeRecording = recordings.find((recording) =>
-    ["starting", "recording", "stopping"].includes(recording.status)
+    ['starting', 'recording', 'stopping'].includes(recording.status)
   );
   const timelineEvents = selectedRecording?.events ?? [];
 
@@ -44,14 +44,14 @@ export function RecordingsPanel({
         </Button>
       </div>
 
-      <div className={`recording-state ${activeRecording ? "is-live" : ""}`}>
+      <div className={`recording-state ${activeRecording ? 'is-live' : ''}`}>
         <span className="recording-dot" />
         <div>
           <Text className="text-sm font-semibold">
-            {activeRecording ? getRecordingStatusLabel(activeRecording.status) : "Ready for next match"}
+            {activeRecording ? getRecordingStatusLabel(activeRecording.status) : 'Ready for next match'}
           </Text>
           <Text className="text-muted-foreground text-xs">
-            {activeRecording ? "Recording will save after match end" : `${recordings.length} saved recordings`}
+            {activeRecording ? 'Recording will save after match end' : `${recordings.length} saved recordings`}
           </Text>
         </div>
       </div>
@@ -64,7 +64,7 @@ export function RecordingsPanel({
             <div className="recording-preview-empty">
               <Text className="text-sm font-semibold">{getRecordingStatusLabel(selectedRecording.status)}</Text>
               <Text className="text-muted-foreground text-xs">
-                {selectedRecording.filePath || "Preview appears when Overwolf returns a playable URL"}
+                {selectedRecording.filePath || 'Preview appears when Overwolf returns a playable URL'}
               </Text>
             </div>
           )}
@@ -118,7 +118,7 @@ export function RecordingsPanel({
           <button
             key={recording.id}
             type="button"
-            className={`recording-row ${recording.id === selectedRecording?.id ? "is-selected" : ""}`}
+            className={`recording-row ${recording.id === selectedRecording?.id ? 'is-selected' : ''}`}
             onClick={() => onSelectRecording(recording.id)}
           >
             <span className={`status-pill ${recording.status}`}>{getRecordingStatusLabel(recording.status)}</span>

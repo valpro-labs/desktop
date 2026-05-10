@@ -30,6 +30,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@overwolf/types": "^3.24.10",
+    "@stylistic/eslint-plugin": "^5.10.0",
     "@tailwindcss/vite": "4.1.17",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",

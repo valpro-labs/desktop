@@ -1,16 +1,16 @@
-import { publishAppEvent } from "../shared/app-events";
-import type { RunningGameInfo } from "../shared/overwolf-games";
+import { publishAppEvent } from '../shared/app-events';
+import type { RunningGameInfo } from '../shared/overwolf-games';
 import {
   GAME_EVENT_REGISTRATION_RETRY_MS,
   MAX_GAME_EVENT_REGISTRATION_TRIES,
   VALORANT_REQUIRED_FEATURES
-} from "./constants";
-import { isValorantRunning, publishGameDetectionSnapshot } from "./game-detection";
+} from './constants';
+import { isValorantRunning, publishGameDetectionSnapshot } from './game-detection';
 import {
   appendCurrentRecordingTimelineEvent,
   startValorantRecording,
   stopValorantRecording
-} from "./recording-controller";
+} from './recording-controller';
 
 type ValorantGameEventsInfo = Record<string, Record<string, unknown> | undefined>;
 
@@ -33,7 +33,7 @@ export function bindValorantEvents() {
   });
 
   overwolf.games.events.onError.addListener((event) => {
-    console.error("VALORANT game events error", event);
+    console.error('VALORANT game events error', event);
   });
 
   overwolf.games.events.onNewEvents.addListener((event) => {
@@ -52,11 +52,11 @@ export function syncValorantGameState(gameInfo: RunningGameInfo | null) {
   if (isValorantRunningNow) {
     if (!wasValorantRunning) {
       publishAppEvent({
-        type: "valorant.detected",
-        title: "VALORANT detected",
-        source: "background",
-        severity: "info",
-        game: "VALORANT",
+        type: 'valorant.detected',
+        title: 'VALORANT detected',
+        source: 'background',
+        severity: 'info',
+        game: 'VALORANT',
         payload: gameInfo
       });
     }
@@ -67,11 +67,11 @@ export function syncValorantGameState(gameInfo: RunningGameInfo | null) {
 
   if (wasValorantRunning) {
     publishAppEvent({
-      type: "valorant.closed",
-      title: "VALORANT closed",
-      source: "background",
-      severity: "info",
-      game: "VALORANT"
+      type: 'valorant.closed',
+      title: 'VALORANT closed',
+      source: 'background',
+      severity: 'info',
+      game: 'VALORANT'
     });
   }
 
@@ -79,7 +79,7 @@ export function syncValorantGameState(gameInfo: RunningGameInfo | null) {
   isMatchActive = false;
   lastGameState = undefined;
   lastRoundPhase = undefined;
-  stopValorantRecording("VALORANT is not running");
+  stopValorantRecording('VALORANT is not running');
 }
 
 async function registerValorantGameEvents() {
@@ -95,15 +95,15 @@ async function registerValorantGameEvents() {
     if (result.success) {
       hasRegisteredValorantGameEvents = true;
       isRegisteringValorantGameEvents = false;
-      console.info("VALORANT game events registered", {
+      console.info('VALORANT game events registered', {
         supportedFeatures: result.supportedFeatures
       });
       publishAppEvent({
-        type: "valorant.events.registered",
-        title: "VALORANT events ready",
-        source: "background",
-        severity: "success",
-        game: "VALORANT",
+        type: 'valorant.events.registered',
+        title: 'VALORANT events ready',
+        source: 'background',
+        severity: 'success',
+        game: 'VALORANT',
         payload: {
           supportedFeatures: result.supportedFeatures
         }
@@ -112,7 +112,7 @@ async function registerValorantGameEvents() {
       return;
     }
 
-    console.warn("Unable to register VALORANT game events", {
+    console.warn('Unable to register VALORANT game events', {
       attempt,
       error: result.error
     });
@@ -121,13 +121,13 @@ async function registerValorantGameEvents() {
   }
 
   isRegisteringValorantGameEvents = false;
-  console.error("VALORANT game events registration failed");
+  console.error('VALORANT game events registration failed');
   publishAppEvent({
-    type: "valorant.events.failed",
-    title: "Unable to register VALORANT events",
-    source: "background",
-    severity: "error",
-    game: "VALORANT"
+    type: 'valorant.events.failed',
+    title: 'Unable to register VALORANT events',
+    source: 'background',
+    severity: 'error',
+    game: 'VALORANT'
   });
 }
 
@@ -140,7 +140,7 @@ function setRequiredFeatures(features: string[]) {
 function syncMatchStateFromGameEventsInfo() {
   overwolf.games.events.getInfo((result) => {
     if (!result.success) {
-      console.warn("Unable to read VALORANT game events info", result);
+      console.warn('Unable to read VALORANT game events info', result);
       return;
     }
 
@@ -151,21 +151,21 @@ function syncMatchStateFromGameEventsInfo() {
 function handleValorantGameEvents(event: overwolf.games.events.NewGameEvents) {
   for (const gameEvent of event.events) {
     const appEvent = publishAppEvent({
-      type: "valorant.game-event",
+      type: 'valorant.game-event',
       title: gameEvent.name,
-      source: "background",
-      severity: "info",
-      game: "VALORANT",
+      source: 'background',
+      severity: 'info',
+      game: 'VALORANT',
       payload: gameEvent
     });
 
-    if (gameEvent.name === "match_start") {
-      startMatchRecording("match_start");
+    if (gameEvent.name === 'match_start') {
+      startMatchRecording('match_start');
       continue;
     }
 
-    if (gameEvent.name === "match_end") {
-      stopMatchRecording("match_end");
+    if (gameEvent.name === 'match_end') {
+      stopMatchRecording('match_end');
       continue;
     }
 
@@ -179,17 +179,17 @@ function handleValorantGameEvents(event: overwolf.games.events.NewGameEvents) {
 }
 
 function handleValorantInfoUpdate(info: ValorantGameEventsInfo | undefined) {
-  const state = getStringInfoValue(info, "game_info", "state");
+  const state = getStringInfoValue(info, 'game_info', 'state');
   const hasGameStateChanged = Boolean(state && state !== lastGameState);
   if (hasGameStateChanged) {
     lastGameState = state;
     const appEvent = publishAppEvent({
-      type: "valorant.info-update",
+      type: 'valorant.info-update',
       title: `Game state: ${state}`,
-      source: "background",
-      severity: "info",
-      game: "VALORANT",
-      payload: { feature: "game_info", key: "state", value: state }
+      source: 'background',
+      severity: 'info',
+      game: 'VALORANT',
+      payload: { feature: 'game_info', key: 'state', value: state }
     });
     appendCurrentRecordingTimelineEvent({
       type: appEvent.type,
@@ -199,25 +199,25 @@ function handleValorantInfoUpdate(info: ValorantGameEventsInfo | undefined) {
     });
   }
 
-  if (hasGameStateChanged && state === "InProgress") {
-    startMatchRecording("game_info.state=InProgress");
+  if (hasGameStateChanged && state === 'InProgress') {
+    startMatchRecording('game_info.state=InProgress');
   }
 
-  if (hasGameStateChanged && (state === "LeavingMap" || state === "Aborted")) {
+  if (hasGameStateChanged && (state === 'LeavingMap' || state === 'Aborted')) {
     stopMatchRecording(`game_info.state=${state}`);
   }
 
-  const roundPhase = getStringInfoValue(info, "match_info", "round_phase");
+  const roundPhase = getStringInfoValue(info, 'match_info', 'round_phase');
   const hasRoundPhaseChanged = Boolean(roundPhase && roundPhase !== lastRoundPhase);
   if (hasRoundPhaseChanged) {
     lastRoundPhase = roundPhase;
     const appEvent = publishAppEvent({
-      type: "valorant.info-update",
+      type: 'valorant.info-update',
       title: `Round phase: ${roundPhase}`,
-      source: "background",
-      severity: "info",
-      game: "VALORANT",
-      payload: { feature: "match_info", key: "round_phase", value: roundPhase }
+      source: 'background',
+      severity: 'info',
+      game: 'VALORANT',
+      payload: { feature: 'match_info', key: 'round_phase', value: roundPhase }
     });
     appendCurrentRecordingTimelineEvent({
       type: appEvent.type,
@@ -227,18 +227,18 @@ function handleValorantInfoUpdate(info: ValorantGameEventsInfo | undefined) {
     });
   }
 
-  if (hasRoundPhaseChanged && (roundPhase === "game_start" || roundPhase === "shopping")) {
+  if (hasRoundPhaseChanged && (roundPhase === 'game_start' || roundPhase === 'shopping')) {
     startMatchRecording(`match_info.round_phase=${roundPhase}`);
   }
 
-  if (hasRoundPhaseChanged && roundPhase === "game_end") {
-    stopMatchRecording("match_info.round_phase=game_end");
+  if (hasRoundPhaseChanged && roundPhase === 'game_end') {
+    stopMatchRecording('match_info.round_phase=game_end');
   }
 }
 
 function startMatchRecording(reason: string) {
   if (!isValorantRunningNow) {
-    console.info("Ignored match recording start because VALORANT is not running", { reason });
+    console.info('Ignored match recording start because VALORANT is not running', { reason });
     return;
   }
 
@@ -246,11 +246,11 @@ function startMatchRecording(reason: string) {
   isMatchActive = true;
   if (!wasMatchActive) {
     publishAppEvent({
-      type: "valorant.match.started",
-      title: "Match started",
-      source: "background",
-      severity: "success",
-      game: "VALORANT",
+      type: 'valorant.match.started',
+      title: 'Match started',
+      source: 'background',
+      severity: 'success',
+      game: 'VALORANT',
       payload: { reason }
     });
   }
@@ -258,9 +258,9 @@ function startMatchRecording(reason: string) {
   startValorantRecording(reason, shouldKeepRecording);
   if (!wasMatchActive) {
     appendCurrentRecordingTimelineEvent({
-      type: "valorant.match.started",
-      title: "Match started",
-      severity: "success",
+      type: 'valorant.match.started',
+      title: 'Match started',
+      severity: 'success',
       payload: { reason }
     });
   }
@@ -271,17 +271,17 @@ function stopMatchRecording(reason: string) {
   isMatchActive = false;
   if (wasMatchActive) {
     publishAppEvent({
-      type: "valorant.match.ended",
-      title: "Match ended",
-      source: "background",
-      severity: "info",
-      game: "VALORANT",
+      type: 'valorant.match.ended',
+      title: 'Match ended',
+      source: 'background',
+      severity: 'info',
+      game: 'VALORANT',
       payload: { reason }
     });
     appendCurrentRecordingTimelineEvent({
-      type: "valorant.match.ended",
-      title: "Match ended",
-      severity: "info",
+      type: 'valorant.match.ended',
+      title: 'Match ended',
+      severity: 'info',
       payload: { reason }
     });
   }
@@ -295,7 +295,7 @@ function shouldKeepRecording() {
 
 function getStringInfoValue(info: ValorantGameEventsInfo | undefined, feature: string, key: string) {
   const value = info?.[feature]?.[key];
-  return typeof value === "string" ? value : undefined;
+  return typeof value === 'string' ? value : undefined;
 }
 
 function delay(milliseconds: number) {
@@ -313,7 +313,7 @@ function getValorantGameEventsInfo(
 function getValorantInfoUpdate(
   event: overwolf.games.events.InfoUpdates2Event
 ): ValorantGameEventsInfo | undefined {
-  if (!event.feature || !event.info || typeof event.info !== "object") {
+  if (!event.feature || !event.info || typeof event.info !== 'object') {
     return undefined;
   }
 
@@ -323,5 +323,5 @@ function getValorantInfoUpdate(
 }
 
 function isValorantGameEventsInfo(value: unknown): value is ValorantGameEventsInfo {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }

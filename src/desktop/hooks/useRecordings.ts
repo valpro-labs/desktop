@@ -1,6 +1,6 @@
-import * as React from "react";
+import * as React from 'react';
 
-import { loadRecordings, subscribeRecordings } from "../../shared/recordings";
+import { loadRecordings, subscribeRecordings } from '../../shared/recordings';
 
 export function useRecordings() {
   const [{ recordings, selectedRecordingId }, setRecordingsState] = React.useState(() => {

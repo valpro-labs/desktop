@@ -1,13 +1,13 @@
-import { getCurrentRunningGameInfo, isOverwolfAvailable } from "../shared/overwolf-games";
-import { GAME_DETECTION_POLL_MS } from "./constants";
-import { publishGameDetectionSnapshot } from "./game-detection";
-import { bindStreamingEvents } from "./recording-controller";
-import { bindValorantEvents, syncValorantGameState } from "./valorant-controller";
-import { getLaunchSource, openDesktopWindow } from "./windows";
+import { getCurrentRunningGameInfo, isOverwolfAvailable } from '../shared/overwolf-games';
+import { GAME_DETECTION_POLL_MS } from './constants';
+import { publishGameDetectionSnapshot } from './game-detection';
+import { bindStreamingEvents } from './recording-controller';
+import { bindValorantEvents, syncValorantGameState } from './valorant-controller';
+import { getLaunchSource, openDesktopWindow } from './windows';
 
 export async function boot() {
   if (!isOverwolfAvailable()) {
-    console.info("Overwolf API is not available. Load this folder as an unpacked Overwolf extension.");
+    console.info('Overwolf API is not available. Load this folder as an unpacked Overwolf extension.');
     return;
   }
 
@@ -18,7 +18,7 @@ export async function boot() {
 
   overwolf.extensions.onAppLaunchTriggered.addListener((event) => {
     const source = getLaunchSource(event.origin);
-    if (source === "gamelaunchevent") {
+    if (source === 'gamelaunchevent') {
       syncRecordingWithRunningGame();
       return;
     }
@@ -27,7 +27,7 @@ export async function boot() {
   });
 
   try {
-    if (getLaunchSource() !== "gamelaunchevent") {
+    if (getLaunchSource() !== 'gamelaunchevent') {
       await openDesktopWindow();
     }
   } catch (error) {

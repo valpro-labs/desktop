@@ -1,19 +1,19 @@
-import { Button, Text } from "@valpro-labs/ui";
+import { Button, Text } from '@valpro-labs/ui';
 
-import iconUrl from "../../assets/icons/IconMouseOver.png";
-import { ActivityPanel } from "./components/ActivityPanel";
-import { RecordingsPanel } from "./components/RecordingsPanel";
-import { StatusCard } from "./components/StatusCard";
-import { useActivityEvents } from "./hooks/useActivityEvents";
-import { useOverwolfRuntime } from "./hooks/useOverwolfRuntime";
-import { useRecordings } from "./hooks/useRecordings";
-import { formatLogPayload } from "./lib/format";
+import iconUrl from '../../assets/icons/IconMouseOver.png';
+import { ActivityPanel } from './components/ActivityPanel';
+import { RecordingsPanel } from './components/RecordingsPanel';
+import { StatusCard } from './components/StatusCard';
+import { useActivityEvents } from './hooks/useActivityEvents';
+import { useOverwolfRuntime } from './hooks/useOverwolfRuntime';
+import { useRecordings } from './hooks/useRecordings';
+import { formatLogPayload } from './lib/format';
 
 export function App() {
   const { statuses, logs, writeStatus, refreshGameStatus, minimizeWindow, closeApp, dragMove, clearLogs } =
     useOverwolfRuntime();
   const { recordings, selectedRecordingId, setSelectedRecordingId, refreshRecordings } = useRecordings();
-  const { activityEvents, refreshActivityEvents } = useActivityEvents((status) => writeStatus("game", status));
+  const { activityEvents, refreshActivityEvents } = useActivityEvents((status) => writeStatus('game', status));
 
   const refreshPanels = () => {
     refreshRecordings();

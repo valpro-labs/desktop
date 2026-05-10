@@ -1,4 +1,4 @@
-import { Text } from "@valpro-labs/ui";
+import { Text } from '@valpro-labs/ui';
 
 export function StatusCard({ label, value }: { label: string; value: string }) {
   return (

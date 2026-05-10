@@ -1,6 +1,6 @@
-import { publishAppEvent } from "../shared/app-events";
-import { getGameClassId, type RunningGameInfo } from "../shared/overwolf-games";
-import { VALORANT_GAME_CLASS_ID } from "./constants";
+import { publishAppEvent } from '../shared/app-events';
+import { getGameClassId, type RunningGameInfo } from '../shared/overwolf-games';
+import { VALORANT_GAME_CLASS_ID } from './constants';
 
 let lastGameDetectionSignature: string | undefined;
 
@@ -18,10 +18,10 @@ export function publishGameDetectionSnapshot(gameInfo: RunningGameInfo | null, r
 
   lastGameDetectionSignature = signature;
   publishAppEvent({
-    type: "game.detection",
-    title: gameInfo ? `Detected game: ${gameInfo.title || gameInfo.id || "unknown"}` : "No running game detected",
-    source: "background",
-    severity: gameInfo ? "info" : "warning",
+    type: 'game.detection',
+    title: gameInfo ? `Detected game: ${gameInfo.title || gameInfo.id || 'unknown'}` : 'No running game detected',
+    source: 'background',
+    severity: gameInfo ? 'info' : 'warning',
     payload: raw
   });
 }
@@ -36,5 +36,5 @@ export function isValorantRunning(gameInfo: RunningGameInfo | null) {
     return true;
   }
 
-  return typeof gameInfo.title === "string" && gameInfo.title.toLowerCase().includes("valorant");
+  return typeof gameInfo.title === 'string' && gameInfo.title.toLowerCase().includes('valorant');
 }

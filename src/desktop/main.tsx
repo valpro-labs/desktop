@@ -1,17 +1,12 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
-import { View } from "react-native";
 import { Uniwind } from "uniwind";
-import {
-  Button,
-  MissionCard,
-  Separator,
-  SettingsGroup,
-  SettingsRow,
-  Text
-} from "@valpro-labs/ui";
+import { Button, Text } from "@valpro-labs/ui";
 
 import iconUrl from "../../assets/icons/IconMouseOver.png";
+import { type AppEvent, loadAppEvents, subscribeAppEvents } from "../shared/app-events";
+import { getCurrentRunningGameInfo } from "../shared/overwolf-games";
+import { type RecordingEntry, loadRecordings, subscribeRecordings } from "../shared/recordings";
 import "./styles.css";
 
 Uniwind.setTheme("dark");
@@ -74,15 +69,12 @@ function getManifest() {
   });
 }
 
-function getRunningGameInfo() {
-  return new Promise<OverwolfGameInfo>((resolve) => {
-    window.overwolf?.games.getRunningGameInfo((info) => resolve(info));
-  });
-}
-
 function App() {
   const [statuses, setStatuses] = React.useState(initialStatus);
   const [logs, setLogs] = React.useState<LogEntry[]>([]);
+  const [recordings, setRecordings] = React.useState<RecordingEntry[]>(() => loadRecordings());
+  const [activityEvents, setActivityEvents] = React.useState<AppEvent[]>(() => loadAppEvents());
+  const [selectedRecordingId, setSelectedRecordingId] = React.useState<string | null>(null);
   const currentWindowId = React.useRef<string | null>(null);
   const logId = React.useRef(0);
 
@@ -106,15 +98,15 @@ function App() {
       return;
     }
 
-    const game = await getRunningGameInfo();
+    const { gameInfo: game, raw } = await getCurrentRunningGameInfo();
     if (game?.isRunning) {
-      writeStatus("game", `${game.title || "Running game"} (${game.id})`);
-      addLog("Running game detected", game);
+      writeStatus("game", `${game.title || "Running game"} (${game.classId ?? game.id})`);
+      addLog("Running game detected", raw);
       return;
     }
 
     writeStatus("game", "No supported game running");
-    addLog("No supported game running");
+    addLog("No supported game running", raw);
   }, [addLog, writeStatus]);
 
   React.useEffect(() => {
@@ -164,6 +156,30 @@ function App() {
 
     initializeOverwolf();
   }, [addLog, refreshGameStatus, writeStatus]);
+
+  React.useEffect(() => {
+    const refreshRecordings = (nextRecordings = loadRecordings()) => {
+      setRecordings(nextRecordings);
+      setSelectedRecordingId((currentId) => {
+        if (currentId && nextRecordings.some((recording) => recording.id === currentId)) {
+          return currentId;
+        }
+
+        return nextRecordings[0]?.id ?? null;
+      });
+    };
+
+    refreshRecordings();
+    setActivityEvents(loadAppEvents());
+
+    const unsubscribeRecordings = subscribeRecordings(refreshRecordings);
+    const unsubscribeAppEvents = subscribeAppEvents(setActivityEvents);
+
+    return () => {
+      unsubscribeRecordings();
+      unsubscribeAppEvents();
+    };
+  }, []);
 
   const minimizeWindow = React.useCallback(() => {
     if (window.overwolf && currentWindowId.current) {
@@ -245,23 +261,16 @@ function App() {
         </section>
 
         <aside className="side-column">
-          <section className="library-panel" aria-label="@valpro-labs/ui preview">
-            <Text className="eyebrow">@valpro-labs/ui</Text>
-            <Text variant="h4">Library preview</Text>
-            <View className="library-stack">
-              <MissionCard
-                title="Win 10 Competitive matches"
-                xpReward={15000}
-                progress={4}
-                total={10}
-              />
-              <SettingsGroup label="Desktop shell">
-                <SettingsRow label="Renderer" rightSlot={<Text className="text-muted-foreground text-sm">React</Text>} />
-                <Separator />
-                <SettingsRow label="UI package" rightSlot={<Text className="text-muted-foreground text-sm">1.9.10</Text>} />
-              </SettingsGroup>
-            </View>
-          </section>
+          <RecordingsPanel
+            recordings={recordings}
+            selectedRecordingId={selectedRecordingId}
+            onRefresh={() => {
+              setRecordings(loadRecordings());
+              setActivityEvents(loadAppEvents());
+            }}
+            onSelectRecording={setSelectedRecordingId}
+          />
+          <ActivityPanel events={activityEvents} />
         </aside>
       </main>
     </div>
@@ -275,6 +284,218 @@ function StatusCard({ label, value }: { label: string; value: string }) {
       <Text className="text-xl font-bold leading-snug">{value}</Text>
     </article>
   );
+}
+
+function RecordingsPanel({
+  recordings,
+  selectedRecordingId,
+  onRefresh,
+  onSelectRecording
+}: {
+  recordings: RecordingEntry[];
+  selectedRecordingId: string | null;
+  onRefresh: () => void;
+  onSelectRecording: (id: string) => void;
+}) {
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
+  const selectedRecording =
+    recordings.find((recording) => recording.id === selectedRecordingId) ?? recordings[0] ?? null;
+  const activeRecording = recordings.find((recording) =>
+    ["starting", "recording", "stopping"].includes(recording.status)
+  );
+  const timelineEvents = selectedRecording?.events ?? [];
+
+  const seekToTimelineEvent = React.useCallback((offsetMs: number) => {
+    if (!videoRef.current) {
+      return;
+    }
+
+    videoRef.current.currentTime = Math.max(0, offsetMs / 1000);
+  }, []);
+
+  return (
+    <section className="recordings-panel" aria-label="Match recordings">
+      <div className="panel-header">
+        <div>
+          <Text className="eyebrow">VALORANT</Text>
+          <Text variant="h4">Recordings</Text>
+        </div>
+        <Button variant="ghost" size="sm" onPress={onRefresh}>
+          <Text>Refresh</Text>
+        </Button>
+      </div>
+
+      <div className={`recording-state ${activeRecording ? "is-live" : ""}`}>
+        <span className="recording-dot" />
+        <div>
+          <Text className="text-sm font-semibold">
+            {activeRecording ? getRecordingStatusLabel(activeRecording.status) : "Ready for next match"}
+          </Text>
+          <Text className="text-muted-foreground text-xs">
+            {activeRecording ? "Recording will save after match end" : `${recordings.length} saved recordings`}
+          </Text>
+        </div>
+      </div>
+
+      {selectedRecording ? (
+        <div className="recording-detail">
+          {selectedRecording.url ? (
+            <video ref={videoRef} className="recording-player" src={selectedRecording.url} controls />
+          ) : (
+            <div className="recording-preview-empty">
+              <Text className="text-sm font-semibold">{getRecordingStatusLabel(selectedRecording.status)}</Text>
+              <Text className="text-muted-foreground text-xs">{selectedRecording.filePath || "Preview appears when Overwolf returns a playable URL"}</Text>
+            </div>
+          )}
+          <div className="recording-detail-meta">
+            <Text className="text-sm font-semibold">{selectedRecording.title}</Text>
+            <Text className="text-muted-foreground text-xs">{getRecordingSummary(selectedRecording)}</Text>
+          </div>
+          {(selectedRecording.url || selectedRecording.filePath) && (
+            <Button variant="outline" size="sm" onPress={() => openRecording(selectedRecording)}>
+              <Text>Open</Text>
+            </Button>
+          )}
+          <div className="recording-timeline">
+            <div className="recording-timeline-header">
+              <Text className="text-sm font-semibold">Timeline</Text>
+              <Text className="text-muted-foreground text-xs">{timelineEvents.length} events</Text>
+            </div>
+            {timelineEvents.length === 0 ? (
+              <div className="recording-timeline-empty">
+                <Text className="text-muted-foreground text-xs">Match events will appear here with video offsets.</Text>
+              </div>
+            ) : (
+              <div className="recording-timeline-list">
+                {timelineEvents.map((event) => (
+                  <button
+                    key={event.id}
+                    type="button"
+                    className={`timeline-row ${event.severity}`}
+                    onClick={() => seekToTimelineEvent(event.offsetMs)}
+                  >
+                    <span className="timeline-offset">{formatDuration(event.offsetMs)}</span>
+                    <span className="timeline-content">
+                      <span className="timeline-title">{event.title}</span>
+                      <span className="timeline-meta">{event.type}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="recording-empty">
+          <Text className="text-sm font-semibold">No recordings yet</Text>
+          <Text className="text-muted-foreground text-xs">Completed matches will show up here automatically.</Text>
+        </div>
+      )}
+
+      <div className="recording-list" role="list">
+        {recordings.map((recording) => (
+          <button
+            key={recording.id}
+            type="button"
+            className={`recording-row ${recording.id === selectedRecording?.id ? "is-selected" : ""}`}
+            onClick={() => onSelectRecording(recording.id)}
+          >
+            <span className={`status-pill ${recording.status}`}>{getRecordingStatusLabel(recording.status)}</span>
+            <span className="recording-row-main">
+              <span className="recording-row-title">{recording.title}</span>
+              <span className="recording-row-meta">{formatDateTime(recording.startedAt)}</span>
+            </span>
+            <span className="recording-row-duration">{formatDuration(recording.durationMs)}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ActivityPanel({ events }: { events: AppEvent[] }) {
+  return (
+    <section className="activity-panel" aria-label="Live activity">
+      <div className="panel-header">
+        <div>
+          <Text className="eyebrow">Events</Text>
+          <Text variant="h4">Live Activity</Text>
+        </div>
+      </div>
+      <ol className="activity-list">
+        {events.length === 0 ? (
+          <li className="activity-empty">
+            <Text className="text-sm font-semibold">No activity yet</Text>
+            <Text className="text-muted-foreground text-xs">Game events and recording updates will appear here.</Text>
+          </li>
+        ) : (
+          events.slice(0, 30).map((event) => (
+            <li key={event.id} className={`activity-item ${event.severity}`}>
+              <span className="activity-marker" />
+              <span className="activity-content">
+                <span className="activity-title">{event.title}</span>
+                <span className="activity-meta">
+                  {formatTime(event.timestamp)} - {event.type}
+                </span>
+                {event.payload ? <span className="activity-payload">{summarizePayload(event.payload)}</span> : null}
+              </span>
+            </li>
+          ))
+        )}
+      </ol>
+    </section>
+  );
+}
+
+function getRecordingStatusLabel(status: RecordingEntry["status"]) {
+  const labels: Record<RecordingEntry["status"], string> = {
+    starting: "Starting",
+    recording: "Recording",
+    stopping: "Saving",
+    saved: "Saved",
+    failed: "Failed"
+  };
+  return labels[status];
+}
+
+function getRecordingSummary(recording: RecordingEntry) {
+  const endedAt = recording.endedAt ? `Ended ${formatDateTime(recording.endedAt)}` : "In progress";
+  return `${formatDateTime(recording.startedAt)} - ${endedAt} - ${formatDuration(recording.durationMs)}`;
+}
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString();
+}
+
+function formatTime(value: string) {
+  return new Date(value).toLocaleTimeString();
+}
+
+function formatDuration(durationMs?: number) {
+  if (!durationMs) {
+    return "--:--";
+  }
+
+  const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function summarizePayload(payload: unknown) {
+  try {
+    const summary = JSON.stringify(payload);
+    return summary.length > 120 ? `${summary.slice(0, 117)}...` : summary;
+  } catch {
+    return String(payload);
+  }
+}
+
+function openRecording(recording: RecordingEntry) {
+  const target = recording.url ?? recording.filePath;
+  if (target) {
+    window.open(target, "_blank");
+  }
 }
 
 createRoot(document.getElementById("root")!).render(

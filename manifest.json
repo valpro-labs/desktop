@@ -17,6 +17,10 @@
     "Tray"
   ],
   "data": {
+    "game_targeting": {
+      "type": "dedicated",
+      "game_ids": [21640]
+    },
     "game_events": [21640],
     "launch_events": [
       {

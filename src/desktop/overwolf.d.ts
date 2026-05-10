@@ -17,6 +17,7 @@ declare global {
   }
 
   interface OverwolfGameInfo {
+    classId?: number;
     id?: number;
     gameId?: number;
     isRunning?: boolean;
@@ -62,6 +63,7 @@ declare global {
         onNewEvents: OverwolfEvent<(event: OverwolfNewGameEvents) => void>;
       };
       getRunningGameInfo: (callback: (info: OverwolfGameInfo) => void) => void;
+      getRunningGameInfo2?: (callback: (result: OverwolfGetRunningGameInfoResult) => void) => void;
       onGameInfoUpdated: OverwolfEvent<(event: OverwolfGameInfoUpdatedEvent) => void>;
       onGameLaunched: OverwolfEvent<(gameInfo: OverwolfGameInfo) => void>;
     };
@@ -146,8 +148,11 @@ declare global {
   }
 
   interface OverwolfStopStreamingResult extends OverwolfCallbackResult {
+    success?: boolean;
     stream_id?: number;
     url?: string;
+    file_path?: string;
+    duration?: number;
     [key: string]: unknown;
   }
 
@@ -188,6 +193,12 @@ declare global {
     game_info?: Record<string, unknown>;
     match_info?: Record<string, unknown>;
     [feature: string]: Record<string, unknown> | undefined;
+  }
+
+  interface OverwolfGetRunningGameInfoResult {
+    success: boolean;
+    error?: string;
+    gameInfo?: OverwolfGameInfo | null;
   }
 }
 

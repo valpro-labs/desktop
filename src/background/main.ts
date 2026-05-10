@@ -1,8 +1,20 @@
+import { publishAppEvent } from "../shared/app-events";
+import { getCurrentRunningGameInfo, getGameClassId } from "../shared/overwolf-games";
+import {
+  appendRecordingTimelineEvent,
+  createRecordingId,
+  updateRecording,
+  upsertRecording
+} from "../shared/recordings";
+
+import type { AppEventSeverity, AppEventType } from "../shared/app-events";
+
 const DESKTOP_WINDOW = "desktop";
 const VALORANT_GAME_CLASS_ID = 21640;
 const VALORANT_REQUIRED_FEATURES = ["match_info", "game_info"];
 const MAX_GAME_EVENT_REGISTRATION_TRIES = 5;
 const GAME_EVENT_REGISTRATION_RETRY_MS = 3000;
+const GAME_DETECTION_POLL_MS = 5000;
 
 let activeStreamId: number | null = null;
 let hasRegisteredValorantGameEvents = false;
@@ -11,6 +23,11 @@ let isRegisteringValorantGameEvents = false;
 let isStartingRecording = false;
 let isStoppingRecording = false;
 let isValorantRunningNow = false;
+let currentRecordingId: string | null = null;
+let currentRecordingStartedAtMs: number | null = null;
+let lastGameState: string | undefined;
+let lastRoundPhase: string | undefined;
+let lastGameDetectionSignature: string | undefined;
 
 function openDeclaredWindow(windowName: string) {
   return new Promise<OverwolfWindow>((resolve, reject) => {
@@ -41,6 +58,7 @@ async function boot() {
 
   bindRecordingEvents();
   syncRecordingWithRunningGame();
+  window.setInterval(syncRecordingWithRunningGame, GAME_DETECTION_POLL_MS);
 
   window.overwolf.extensions.onAppLaunchTriggered.addListener((origin) => {
     const source = getLaunchSource(origin);
@@ -63,10 +81,12 @@ async function boot() {
 
 function bindRecordingEvents() {
   window.overwolf?.games.onGameLaunched.addListener((gameInfo) => {
+    publishGameDetectionSnapshot(gameInfo, gameInfo);
     syncValorantGameState(gameInfo);
   });
 
   window.overwolf?.games.onGameInfoUpdated.addListener((event) => {
+    publishGameDetectionSnapshot(event.gameInfo ?? null, event);
     syncValorantGameState(event.gameInfo ?? null);
   });
 
@@ -106,21 +126,46 @@ function bindRecordingEvents() {
 }
 
 function syncRecordingWithRunningGame() {
-  window.overwolf?.games.getRunningGameInfo((gameInfo) => {
+  getCurrentRunningGameInfo().then(({ gameInfo, raw }) => {
+    publishGameDetectionSnapshot(gameInfo, raw);
     syncValorantGameState(gameInfo);
   });
 }
 
 function syncValorantGameState(gameInfo: OverwolfGameInfo | null) {
+  const wasValorantRunning = isValorantRunningNow;
   isValorantRunningNow = isValorantRunning(gameInfo);
 
   if (isValorantRunningNow) {
+    if (!wasValorantRunning) {
+      publishAppEvent({
+        type: "valorant.detected",
+        title: "VALORANT detected",
+        source: "background",
+        severity: "info",
+        game: "VALORANT",
+        payload: gameInfo
+      });
+    }
+
     registerValorantGameEvents();
     return;
   }
 
+  if (wasValorantRunning) {
+    publishAppEvent({
+      type: "valorant.closed",
+      title: "VALORANT closed",
+      source: "background",
+      severity: "info",
+      game: "VALORANT"
+    });
+  }
+
   hasRegisteredValorantGameEvents = false;
   isMatchActive = false;
+  lastGameState = undefined;
+  lastRoundPhase = undefined;
   stopValorantRecording("VALORANT is not running");
 }
 
@@ -140,6 +185,16 @@ async function registerValorantGameEvents() {
       console.info("VALORANT game events registered", {
         supportedFeatures: result.supportedFeatures
       });
+      publishAppEvent({
+        type: "valorant.events.registered",
+        title: "VALORANT events ready",
+        source: "background",
+        severity: "success",
+        game: "VALORANT",
+        payload: {
+          supportedFeatures: result.supportedFeatures
+        }
+      });
       syncMatchStateFromGameEventsInfo();
       return;
     }
@@ -154,6 +209,13 @@ async function registerValorantGameEvents() {
 
   isRegisteringValorantGameEvents = false;
   console.error("VALORANT game events registration failed");
+  publishAppEvent({
+    type: "valorant.events.failed",
+    title: "Unable to register VALORANT events",
+    source: "background",
+    severity: "error",
+    game: "VALORANT"
+  });
 }
 
 function setRequiredFeatures(features: string[]) {
@@ -175,32 +237,88 @@ function syncMatchStateFromGameEventsInfo() {
 
 function handleValorantGameEvents(event: OverwolfNewGameEvents) {
   for (const gameEvent of event.events ?? []) {
+    const appEvent = publishAppEvent({
+      type: "valorant.game-event",
+      title: gameEvent.name,
+      source: "background",
+      severity: "info",
+      game: "VALORANT",
+      payload: gameEvent
+    });
+
     if (gameEvent.name === "match_start") {
       startMatchRecording("match_start");
+      continue;
     }
 
     if (gameEvent.name === "match_end") {
       stopMatchRecording("match_end");
+      continue;
     }
+
+    appendCurrentRecordingTimelineEvent({
+      type: appEvent.type,
+      title: gameEvent.name,
+      severity: appEvent.severity,
+      payload: gameEvent
+    });
   }
 }
 
 function handleValorantInfoUpdate(info: OverwolfGameEventsInfo | undefined) {
   const state = getStringInfoValue(info, "game_info", "state");
-  if (state === "InProgress") {
+  const hasGameStateChanged = Boolean(state && state !== lastGameState);
+  if (hasGameStateChanged) {
+    lastGameState = state;
+    const appEvent = publishAppEvent({
+      type: "valorant.info-update",
+      title: `Game state: ${state}`,
+      source: "background",
+      severity: "info",
+      game: "VALORANT",
+      payload: { feature: "game_info", key: "state", value: state }
+    });
+    appendCurrentRecordingTimelineEvent({
+      type: appEvent.type,
+      title: appEvent.title,
+      severity: appEvent.severity,
+      payload: appEvent.payload
+    });
+  }
+
+  if (hasGameStateChanged && state === "InProgress") {
     startMatchRecording("game_info.state=InProgress");
   }
 
-  if (state === "LeavingMap" || state === "Aborted") {
+  if (hasGameStateChanged && (state === "LeavingMap" || state === "Aborted")) {
     stopMatchRecording(`game_info.state=${state}`);
   }
 
   const roundPhase = getStringInfoValue(info, "match_info", "round_phase");
-  if (roundPhase === "game_start" || roundPhase === "shopping") {
+  const hasRoundPhaseChanged = Boolean(roundPhase && roundPhase !== lastRoundPhase);
+  if (hasRoundPhaseChanged) {
+    lastRoundPhase = roundPhase;
+    const appEvent = publishAppEvent({
+      type: "valorant.info-update",
+      title: `Round phase: ${roundPhase}`,
+      source: "background",
+      severity: "info",
+      game: "VALORANT",
+      payload: { feature: "match_info", key: "round_phase", value: roundPhase }
+    });
+    appendCurrentRecordingTimelineEvent({
+      type: appEvent.type,
+      title: appEvent.title,
+      severity: appEvent.severity,
+      payload: appEvent.payload
+    });
+  }
+
+  if (hasRoundPhaseChanged && (roundPhase === "game_start" || roundPhase === "shopping")) {
     startMatchRecording(`match_info.round_phase=${roundPhase}`);
   }
 
-  if (roundPhase === "game_end") {
+  if (hasRoundPhaseChanged && roundPhase === "game_end") {
     stopMatchRecording("match_info.round_phase=game_end");
   }
 }
@@ -211,12 +329,50 @@ function startMatchRecording(reason: string) {
     return;
   }
 
+  const wasMatchActive = isMatchActive;
   isMatchActive = true;
+  if (!wasMatchActive) {
+    publishAppEvent({
+      type: "valorant.match.started",
+      title: "Match started",
+      source: "background",
+      severity: "success",
+      game: "VALORANT",
+      payload: { reason }
+    });
+  }
+
   startValorantRecording(reason);
+  if (!wasMatchActive) {
+    appendCurrentRecordingTimelineEvent({
+      type: "valorant.match.started",
+      title: "Match started",
+      severity: "success",
+      payload: { reason }
+    });
+  }
 }
 
 function stopMatchRecording(reason: string) {
+  const wasMatchActive = isMatchActive;
   isMatchActive = false;
+  if (wasMatchActive) {
+    publishAppEvent({
+      type: "valorant.match.ended",
+      title: "Match ended",
+      source: "background",
+      severity: "info",
+      game: "VALORANT",
+      payload: { reason }
+    });
+    appendCurrentRecordingTimelineEvent({
+      type: "valorant.match.ended",
+      title: "Match ended",
+      severity: "info",
+      payload: { reason }
+    });
+  }
+
   stopValorantRecording(reason);
 }
 
@@ -225,18 +381,68 @@ function startValorantRecording(reason: string) {
     return;
   }
 
+  currentRecordingId = createRecordingId();
+  currentRecordingStartedAtMs = Date.now();
+  const startedAt = new Date(currentRecordingStartedAtMs).toISOString();
   isStartingRecording = true;
   console.info("Starting VALORANT match recording", { reason });
+  upsertRecording({
+    id: currentRecordingId,
+    title: "VALORANT Match",
+    game: "VALORANT",
+    status: "starting",
+    startedAt,
+    events: [
+      {
+        id: `recording.timeline-start-${currentRecordingStartedAtMs}`,
+        type: "recording.starting",
+        title: "Recording requested",
+        timestamp: startedAt,
+        offsetMs: 0,
+        severity: "info",
+        payload: { reason }
+      }
+    ]
+  });
+  publishAppEvent({
+    type: "recording.starting",
+    title: "Starting recording",
+    source: "background",
+    severity: "info",
+    recordingId: currentRecordingId,
+    game: "VALORANT",
+    payload: { reason }
+  });
 
   window.overwolf?.streaming.start(createRecordingSettings(), (result) => {
     isStartingRecording = false;
 
     if (result.status !== "success" || typeof result.stream_id !== "number") {
       console.error("Unable to start VALORANT recording", result);
+      markCurrentRecordingFailed(result.error || "Unable to start recording");
       return;
     }
 
     activeStreamId = result.stream_id;
+    updateCurrentRecording({
+      status: "recording",
+      streamId: activeStreamId
+    });
+    appendCurrentRecordingTimelineEvent({
+      type: "recording.started",
+      title: "Recording started",
+      severity: "success",
+      payload: { streamId: activeStreamId }
+    });
+    publishAppEvent({
+      type: "recording.started",
+      title: "Recording started",
+      source: "background",
+      severity: "success",
+      recordingId: currentRecordingId ?? undefined,
+      game: "VALORANT",
+      payload: { streamId: activeStreamId }
+    });
     console.info("VALORANT recording stream ready", { streamId: activeStreamId });
 
     if (!isMatchActive || !isValorantRunningNow) {
@@ -254,15 +460,73 @@ function stopValorantRecording(reason: string) {
   activeStreamId = null;
   isStoppingRecording = true;
   console.info("Stopping VALORANT recording", { streamId, reason });
+  updateCurrentRecording({
+    status: "stopping",
+    stopReason: reason
+  });
+  appendCurrentRecordingTimelineEvent({
+    type: "recording.stopping",
+    title: "Recording stopping",
+    severity: "info",
+    payload: { streamId, reason }
+  });
+  publishAppEvent({
+    type: "recording.stopping",
+    title: "Stopping recording",
+    source: "background",
+    severity: "info",
+    recordingId: currentRecordingId ?? undefined,
+    game: "VALORANT",
+    payload: { streamId, reason }
+  });
 
   window.overwolf?.streaming.stop(streamId, (result) => {
     isStoppingRecording = false;
 
     if (result?.status && result.status !== "success") {
       console.error("Unable to stop VALORANT recording", result);
+      markCurrentRecordingFailed(result.error || "Unable to stop recording");
       return;
     }
 
+    updateCurrentRecording({
+      status: "saved",
+      endedAt: new Date().toISOString(),
+      durationMs: result?.duration,
+      streamId: result?.stream_id ?? streamId,
+      url: result?.url,
+      filePath: result?.file_path,
+      stopReason: reason
+    });
+    appendCurrentRecordingTimelineEvent({
+      type: "recording.saved",
+      title: "Recording saved",
+      severity: "success",
+      payload: {
+        streamId: result?.stream_id ?? streamId,
+        url: result?.url,
+        filePath: result?.file_path,
+        durationMs: result?.duration,
+        reason
+      }
+    });
+    publishAppEvent({
+      type: "recording.saved",
+      title: "Recording saved",
+      source: "background",
+      severity: "success",
+      recordingId: currentRecordingId ?? undefined,
+      game: "VALORANT",
+      payload: {
+        streamId: result?.stream_id ?? streamId,
+        url: result?.url,
+        filePath: result?.file_path,
+        durationMs: result?.duration,
+        reason
+      }
+    });
+    currentRecordingId = null;
+    currentRecordingStartedAtMs = null;
     console.info("VALORANT recording saved", result);
   });
 }
@@ -296,8 +560,8 @@ function isValorantRunning(gameInfo: OverwolfGameInfo | null) {
     return false;
   }
 
-  const gameId = gameInfo.gameId ?? gameInfo.id;
-  if (gameId === VALORANT_GAME_CLASS_ID || (gameId && Math.floor(gameId / 10) === VALORANT_GAME_CLASS_ID)) {
+  const gameClassId = getGameClassId(gameInfo);
+  if (gameClassId === VALORANT_GAME_CLASS_ID) {
     return true;
   }
 
@@ -324,6 +588,87 @@ function getStringInfoValue(
 function delay(milliseconds: number) {
   return new Promise((resolve) => {
     window.setTimeout(resolve, milliseconds);
+  });
+}
+
+function updateCurrentRecording(patch: Parameters<typeof updateRecording>[1]) {
+  if (!currentRecordingId) {
+    return;
+  }
+
+  updateRecording(currentRecordingId, patch);
+}
+
+function markCurrentRecordingFailed(error: string) {
+  const recordingId = currentRecordingId;
+  appendCurrentRecordingTimelineEvent({
+    type: "recording.failed",
+    title: "Recording failed",
+    severity: "error",
+    payload: { error }
+  });
+  updateCurrentRecording({
+    status: "failed",
+    endedAt: new Date().toISOString(),
+    error
+  });
+  publishAppEvent({
+    type: "recording.failed",
+    title: "Recording failed",
+    source: "background",
+    severity: "error",
+    recordingId: recordingId ?? undefined,
+    game: "VALORANT",
+    payload: { error }
+  });
+  currentRecordingId = null;
+  currentRecordingStartedAtMs = null;
+}
+
+function publishGameDetectionSnapshot(gameInfo: OverwolfGameInfo | null, raw: unknown) {
+  const signature = JSON.stringify({
+    id: gameInfo?.id,
+    classId: gameInfo?.classId,
+    gameId: gameInfo?.gameId,
+    isRunning: gameInfo?.isRunning,
+    title: gameInfo?.title
+  });
+
+  if (signature === lastGameDetectionSignature) {
+    return;
+  }
+
+  lastGameDetectionSignature = signature;
+  publishAppEvent({
+    type: "game.detection",
+    title: gameInfo ? `Detected game: ${gameInfo.title || gameInfo.id || "unknown"}` : "No running game detected",
+    source: "background",
+    severity: gameInfo ? "info" : "warning",
+    payload: raw
+  });
+}
+
+function appendCurrentRecordingTimelineEvent({
+  type,
+  title,
+  severity,
+  payload
+}: {
+  type: AppEventType;
+  title: string;
+  severity: AppEventSeverity;
+  payload?: unknown;
+}) {
+  if (!currentRecordingId || currentRecordingStartedAtMs === null) {
+    return;
+  }
+
+  appendRecordingTimelineEvent(currentRecordingId, {
+    type,
+    title,
+    severity,
+    payload,
+    offsetMs: Date.now() - currentRecordingStartedAtMs
   });
 }
 

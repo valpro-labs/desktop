@@ -142,7 +142,8 @@ button {
 
 .status-card,
 .panel,
-.library-panel {
+.recordings-panel,
+.activity-panel {
   background: color-mix(in srgb, var(--color-card) 86%, transparent);
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -156,7 +157,8 @@ button {
 }
 
 .panel,
-.library-panel {
+.recordings-panel,
+.activity-panel {
   overflow: hidden;
 }
 
@@ -189,15 +191,300 @@ button {
   padding: 10px;
 }
 
-.library-panel {
+.recordings-panel,
+.activity-panel {
   display: grid;
-  gap: 14px;
+  min-height: 0;
+}
+
+.recordings-panel {
+  align-content: start;
+}
+
+.recording-state {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.recording-state.is-live .recording-dot {
+  background: var(--color-val-red);
+  box-shadow: 0 0 0 6px rgba(255, 70, 85, 0.14);
+}
+
+.recording-dot {
+  background: var(--color-val-green-ui);
+  border-radius: 999px;
+  display: inline-block;
+  height: 9px;
+  width: 9px;
+}
+
+.recording-detail {
+  border-bottom: 1px solid var(--color-border);
+  display: grid;
+  gap: 12px;
   padding: 16px;
 }
 
-.library-stack {
+.recording-player,
+.recording-preview-empty {
+  aspect-ratio: 16 / 9;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  width: 100%;
+}
+
+.recording-preview-empty {
+  align-content: center;
   display: grid;
-  gap: 12px;
+  gap: 6px;
+  justify-items: center;
+  padding: 16px;
+  text-align: center;
+}
+
+.recording-detail-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.recording-timeline {
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.recording-timeline-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.recording-timeline-empty {
+  border: 1px dashed var(--color-border);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.recording-timeline-list {
+  display: grid;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.timeline-row {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  color: var(--color-foreground);
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 48px minmax(0, 1fr);
+  min-height: 46px;
+  padding: 8px 2px;
+  text-align: left;
+}
+
+.timeline-row:hover {
+  background: color-mix(in srgb, var(--color-accent) 64%, transparent);
+}
+
+.timeline-offset {
+  color: var(--color-val-green-ui);
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.timeline-row.error .timeline-offset {
+  color: var(--color-val-red);
+}
+
+.timeline-row.warning .timeline-offset {
+  color: var(--color-val-yellow-ui);
+}
+
+.timeline-content {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.timeline-title {
+  color: var(--color-foreground);
+  font-size: 12px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeline-meta {
+  color: var(--color-muted-foreground);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recording-empty {
+  border-bottom: 1px solid var(--color-border);
+  display: grid;
+  gap: 6px;
+  padding: 18px 16px;
+}
+
+.recording-list,
+.activity-list {
+  display: grid;
+  margin: 0;
+  overflow: auto;
+}
+
+.recording-list {
+  max-height: 220px;
+}
+
+.recording-row {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  color: var(--color-foreground);
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  min-height: 58px;
+  padding: 10px 14px;
+  text-align: left;
+}
+
+.recording-row:hover,
+.recording-row.is-selected {
+  background: color-mix(in srgb, var(--color-accent) 72%, transparent);
+}
+
+.status-pill {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-muted-foreground);
+  font-size: 11px;
+  font-weight: 800;
+  justify-self: start;
+  line-height: 1;
+  padding: 6px 8px;
+}
+
+.status-pill.recording {
+  border-color: rgba(255, 70, 85, 0.5);
+  color: var(--color-val-red);
+}
+
+.status-pill.saved {
+  border-color: rgba(34, 255, 197, 0.45);
+  color: var(--color-val-green-ui);
+}
+
+.status-pill.failed {
+  border-color: rgba(255, 70, 85, 0.5);
+  color: var(--color-val-red);
+}
+
+.recording-row-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.recording-row-title,
+.activity-title {
+  color: var(--color-foreground);
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recording-row-meta,
+.recording-row-duration,
+.activity-meta,
+.activity-payload {
+  color: var(--color-muted-foreground);
+  font-size: 11px;
+}
+
+.recording-row-duration {
+  font-family: "Cascadia Mono", Consolas, monospace;
+}
+
+.activity-panel {
+  min-height: 220px;
+}
+
+.activity-list {
+  gap: 0;
+  list-style: none;
+  max-height: 300px;
+  padding: 0;
+}
+
+.activity-item {
+  align-items: start;
+  border-bottom: 1px solid var(--color-border);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 12px 14px;
+}
+
+.activity-marker {
+  background: var(--color-muted-foreground);
+  border-radius: 999px;
+  height: 8px;
+  margin-top: 5px;
+  width: 8px;
+}
+
+.activity-item.success .activity-marker {
+  background: var(--color-val-green-ui);
+}
+
+.activity-item.warning .activity-marker {
+  background: var(--color-val-yellow-ui);
+}
+
+.activity-item.error .activity-marker {
+  background: var(--color-val-red);
+}
+
+.activity-content {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.activity-payload {
+  font-family: "Cascadia Mono", Consolas, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-empty {
+  display: grid;
+  gap: 6px;
+  padding: 18px 16px;
 }
 
 @media (max-width: 920px) {

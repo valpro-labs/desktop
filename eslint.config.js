@@ -81,8 +81,8 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['./*', '../*'],
-              message: 'Use @/ for src imports or @assets/ for assets instead of relative paths.'
+              regex: '^\\.\\.?/(?!.*\\.css$)',
+              message: 'Use @/ for src imports or @assets/ for assets instead of relative paths. Relative CSS imports are allowed.'
             }
           ]
         }

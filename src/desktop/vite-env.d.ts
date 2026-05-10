@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 /// <reference types="uniwind/types" />
 
 declare module '*.png' {

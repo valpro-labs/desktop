@@ -1,17 +1,26 @@
+export type RunningGameInfo =
+  | overwolf.games.RunningGameInfo
+  | overwolf.games.GetRunningGameInfoResult
+  | overwolf.games.GetRunningGameInfoResult2GameInfo;
+
 export interface RunningGameSnapshot {
-  gameInfo: OverwolfGameInfo | null;
+  gameInfo: RunningGameInfo | null;
   raw: unknown;
+}
+
+export function isOverwolfAvailable() {
+  return typeof overwolf !== "undefined";
 }
 
 export function getCurrentRunningGameInfo() {
   return new Promise<RunningGameSnapshot>((resolve) => {
-    if (!window.overwolf) {
+    if (!isOverwolfAvailable()) {
       resolve({ gameInfo: null, raw: null });
       return;
     }
 
-    if (window.overwolf.games.getRunningGameInfo2) {
-      window.overwolf.games.getRunningGameInfo2((result) => {
+    if (typeof overwolf.games.getRunningGameInfo2 === "function") {
+      overwolf.games.getRunningGameInfo2((result) => {
         resolve({
           gameInfo: result.gameInfo ?? null,
           raw: result
@@ -20,7 +29,7 @@ export function getCurrentRunningGameInfo() {
       return;
     }
 
-    window.overwolf.games.getRunningGameInfo((result) => {
+    overwolf.games.getRunningGameInfo((result) => {
       resolve({
         gameInfo: result?.isRunning ? result : null,
         raw: result
@@ -29,7 +38,7 @@ export function getCurrentRunningGameInfo() {
   });
 }
 
-export function getGameClassId(gameInfo: OverwolfGameInfo | null) {
+export function getGameClassId(gameInfo: RunningGameInfo | null) {
   if (!gameInfo) {
     return undefined;
   }
@@ -38,7 +47,7 @@ export function getGameClassId(gameInfo: OverwolfGameInfo | null) {
     return gameInfo.classId;
   }
 
-  const gameId = gameInfo.gameId ?? gameInfo.id;
+  const gameId = (gameInfo as RunningGameInfo & { gameId?: number }).gameId ?? gameInfo.id;
   if (typeof gameId === "number") {
     return Math.floor(gameId / 10);
   }

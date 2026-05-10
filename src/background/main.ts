@@ -1,5 +1,10 @@
 import { publishAppEvent } from "../shared/app-events";
-import { getCurrentRunningGameInfo, getGameClassId } from "../shared/overwolf-games";
+import {
+  getCurrentRunningGameInfo,
+  getGameClassId,
+  isOverwolfAvailable,
+  type RunningGameInfo
+} from "../shared/overwolf-games";
 import {
   appendRecordingTimelineEvent,
   createRecordingId,
@@ -16,6 +21,8 @@ const MAX_GAME_EVENT_REGISTRATION_TRIES = 5;
 const GAME_EVENT_REGISTRATION_RETRY_MS = 3000;
 const GAME_DETECTION_POLL_MS = 5000;
 
+type ValorantGameEventsInfo = Record<string, Record<string, unknown> | undefined>;
+
 let activeStreamId: number | null = null;
 let hasRegisteredValorantGameEvents = false;
 let isMatchActive = false;
@@ -30,17 +37,17 @@ let lastRoundPhase: string | undefined;
 let lastGameDetectionSignature: string | undefined;
 
 function openDeclaredWindow(windowName: string) {
-  return new Promise<OverwolfWindow>((resolve, reject) => {
-    window.overwolf?.windows.obtainDeclaredWindow(windowName, (result) => {
-      if (result.status !== "success") {
-        reject(new Error(`Unable to obtain ${windowName}: ${result.error || result.status}`));
+  return new Promise<overwolf.windows.WindowInfo>((resolve, reject) => {
+    overwolf.windows.obtainDeclaredWindow(windowName, (result) => {
+      if (!result.success) {
+        reject(new Error(`Unable to obtain ${windowName}: ${result.error || "unknown error"}`));
         return;
       }
 
       const windowId = result.window.id;
-      window.overwolf?.windows.restore(windowId, (restoreResult) => {
-        if (restoreResult?.status && restoreResult.status !== "success") {
-          reject(new Error(`Unable to restore ${windowName}: ${restoreResult.error || restoreResult.status}`));
+      overwolf.windows.restore(windowId, (restoreResult) => {
+        if (restoreResult && !restoreResult.success) {
+          reject(new Error(`Unable to restore ${windowName}: ${restoreResult.error || "unknown error"}`));
           return;
         }
 
@@ -51,7 +58,7 @@ function openDeclaredWindow(windowName: string) {
 }
 
 async function boot() {
-  if (!window.overwolf) {
+  if (!isOverwolfAvailable()) {
     console.info("Overwolf API is not available. Load this folder as an unpacked Overwolf extension.");
     return;
   }
@@ -60,8 +67,8 @@ async function boot() {
   syncRecordingWithRunningGame();
   window.setInterval(syncRecordingWithRunningGame, GAME_DETECTION_POLL_MS);
 
-  window.overwolf.extensions.onAppLaunchTriggered.addListener((origin) => {
-    const source = getLaunchSource(origin);
+  overwolf.extensions.onAppLaunchTriggered.addListener((event) => {
+    const source = getLaunchSource(event.origin);
     if (source === "gamelaunchevent") {
       syncRecordingWithRunningGame();
       return;
@@ -80,47 +87,47 @@ async function boot() {
 }
 
 function bindRecordingEvents() {
-  window.overwolf?.games.onGameLaunched.addListener((gameInfo) => {
+  overwolf.games.onGameLaunched.addListener((gameInfo) => {
     publishGameDetectionSnapshot(gameInfo, gameInfo);
     syncValorantGameState(gameInfo);
   });
 
-  window.overwolf?.games.onGameInfoUpdated.addListener((event) => {
+  overwolf.games.onGameInfoUpdated.addListener((event) => {
     publishGameDetectionSnapshot(event.gameInfo ?? null, event);
     syncValorantGameState(event.gameInfo ?? null);
   });
 
-  window.overwolf?.games.events.onError.addListener((event) => {
+  overwolf.games.events.onError.addListener((event) => {
     console.error("VALORANT game events error", event);
   });
 
-  window.overwolf?.games.events.onNewEvents.addListener((event) => {
+  overwolf.games.events.onNewEvents.addListener((event) => {
     handleValorantGameEvents(event);
   });
 
-  window.overwolf?.games.events.onInfoUpdates2.addListener((event) => {
-    handleValorantInfoUpdate(event.info);
+  overwolf.games.events.onInfoUpdates2.addListener((event) => {
+    handleValorantInfoUpdate(getValorantInfoUpdate(event));
   });
 
-  window.overwolf?.streaming.onStartStreaming.addListener((event) => {
+  overwolf.streaming.onStartStreaming.addListener((event) => {
     console.info("Recording started", event);
   });
 
-  window.overwolf?.streaming.onStopStreaming.addListener((event) => {
+  overwolf.streaming.onStopStreaming.addListener((event) => {
     console.info("Recording stopped", event);
     if (!isStoppingRecording) {
       activeStreamId = null;
     }
   });
 
-  window.overwolf?.streaming.onStreamingError.addListener((event) => {
+  overwolf.streaming.onStreamingError.addListener((event) => {
     console.error("Recording error", event);
     activeStreamId = null;
     isStartingRecording = false;
     isStoppingRecording = false;
   });
 
-  window.overwolf?.streaming.onStreamingWarning.addListener((event) => {
+  overwolf.streaming.onStreamingWarning.addListener((event) => {
     console.warn("Recording warning", event);
   });
 }
@@ -132,7 +139,7 @@ function syncRecordingWithRunningGame() {
   });
 }
 
-function syncValorantGameState(gameInfo: OverwolfGameInfo | null) {
+function syncValorantGameState(gameInfo: RunningGameInfo | null) {
   const wasValorantRunning = isValorantRunningNow;
   isValorantRunningNow = isValorantRunning(gameInfo);
 
@@ -219,24 +226,24 @@ async function registerValorantGameEvents() {
 }
 
 function setRequiredFeatures(features: string[]) {
-  return new Promise<OverwolfSetRequiredFeaturesResult>((resolve) => {
-    window.overwolf?.games.events.setRequiredFeatures(features, resolve);
+  return new Promise<overwolf.games.events.SetRequiredFeaturesResult>((resolve) => {
+    overwolf.games.events.setRequiredFeatures(features, resolve);
   });
 }
 
 function syncMatchStateFromGameEventsInfo() {
-  window.overwolf?.games.events.getInfo((result) => {
+  overwolf.games.events.getInfo((result) => {
     if (!result.success) {
       console.warn("Unable to read VALORANT game events info", result);
       return;
     }
 
-    handleValorantInfoUpdate(result.info);
+    handleValorantInfoUpdate(getValorantGameEventsInfo(result));
   });
 }
 
-function handleValorantGameEvents(event: OverwolfNewGameEvents) {
-  for (const gameEvent of event.events ?? []) {
+function handleValorantGameEvents(event: overwolf.games.events.NewGameEvents) {
+  for (const gameEvent of event.events) {
     const appEvent = publishAppEvent({
       type: "valorant.game-event",
       title: gameEvent.name,
@@ -265,7 +272,7 @@ function handleValorantGameEvents(event: OverwolfNewGameEvents) {
   }
 }
 
-function handleValorantInfoUpdate(info: OverwolfGameEventsInfo | undefined) {
+function handleValorantInfoUpdate(info: ValorantGameEventsInfo | undefined) {
   const state = getStringInfoValue(info, "game_info", "state");
   const hasGameStateChanged = Boolean(state && state !== lastGameState);
   if (hasGameStateChanged) {
@@ -414,10 +421,10 @@ function startValorantRecording(reason: string) {
     payload: { reason }
   });
 
-  window.overwolf?.streaming.start(createRecordingSettings(), (result) => {
+  overwolf.streaming.start(createRecordingSettings(), (result) => {
     isStartingRecording = false;
 
-    if (result.status !== "success" || typeof result.stream_id !== "number") {
+    if (!result.success || typeof result.stream_id !== "number") {
       console.error("Unable to start VALORANT recording", result);
       markCurrentRecordingFailed(result.error || "Unable to start recording");
       return;
@@ -480,22 +487,24 @@ function stopValorantRecording(reason: string) {
     payload: { streamId, reason }
   });
 
-  window.overwolf?.streaming.stop(streamId, (result) => {
+  overwolf.streaming.stop(streamId, (result) => {
     isStoppingRecording = false;
 
-    if (result?.status && result.status !== "success") {
+    if (result && !result.success) {
       console.error("Unable to stop VALORANT recording", result);
       markCurrentRecordingFailed(result.error || "Unable to stop recording");
       return;
     }
 
+    const stopResult = getStopStreamingResult(result);
+
     updateCurrentRecording({
       status: "saved",
       endedAt: new Date().toISOString(),
-      durationMs: result?.duration,
+      durationMs: stopResult?.duration,
       streamId: result?.stream_id ?? streamId,
-      url: result?.url,
-      filePath: result?.file_path,
+      url: stopResult?.url,
+      filePath: stopResult?.file_path,
       stopReason: reason
     });
     appendCurrentRecordingTimelineEvent({
@@ -504,9 +513,9 @@ function stopValorantRecording(reason: string) {
       severity: "success",
       payload: {
         streamId: result?.stream_id ?? streamId,
-        url: result?.url,
-        filePath: result?.file_path,
-        durationMs: result?.duration,
+        url: stopResult?.url,
+        filePath: stopResult?.file_path,
+        durationMs: stopResult?.duration,
         reason
       }
     });
@@ -519,9 +528,9 @@ function stopValorantRecording(reason: string) {
       game: "VALORANT",
       payload: {
         streamId: result?.stream_id ?? streamId,
-        url: result?.url,
-        filePath: result?.file_path,
-        durationMs: result?.duration,
+        url: stopResult?.url,
+        filePath: stopResult?.file_path,
+        durationMs: stopResult?.duration,
         reason
       }
     });
@@ -531,13 +540,20 @@ function stopValorantRecording(reason: string) {
   });
 }
 
-function createRecordingSettings(): OverwolfStreamSettings {
+function createRecordingSettings(): overwolf.streaming.StreamSettings {
   return {
-    provider: window.overwolf!.streaming.enums.StreamingProvider.VideoRecorder,
+    provider: "VideoRecorder" as overwolf.streaming.enums.StreamingProvider,
     settings: {
       audio: {
         mic: { enable: false, volume: 0 },
-        game: { enable: true, volume: 100 }
+        game: {
+          enable: true,
+          volume: 100,
+          filtered_capture: {
+            enable: false,
+            additional_process_names: []
+          }
+        }
       },
       video: {
         auto_calc_kbps: false,
@@ -558,7 +574,7 @@ function createRecordingSettings(): OverwolfStreamSettings {
   };
 }
 
-function isValorantRunning(gameInfo: OverwolfGameInfo | null) {
+function isValorantRunning(gameInfo: RunningGameInfo | null) {
   if (!gameInfo?.isRunning) {
     return false;
   }
@@ -580,7 +596,7 @@ function getLaunchSource(origin = window.location.href) {
 }
 
 function getStringInfoValue(
-  info: OverwolfGameEventsInfo | undefined,
+  info: ValorantGameEventsInfo | undefined,
   feature: string,
   key: string
 ) {
@@ -592,6 +608,38 @@ function delay(milliseconds: number) {
   return new Promise((resolve) => {
     window.setTimeout(resolve, milliseconds);
   });
+}
+
+function getValorantGameEventsInfo(
+  result: overwolf.games.events.GetInfoResult
+): ValorantGameEventsInfo | undefined {
+  return isValorantGameEventsInfo(result.res) ? result.res : undefined;
+}
+
+function getValorantInfoUpdate(
+  event: overwolf.games.events.InfoUpdates2Event
+): ValorantGameEventsInfo | undefined {
+  if (!event.feature || !event.info || typeof event.info !== "object") {
+    return undefined;
+  }
+
+  return {
+    [String(event.feature)]: event.info as Record<string, unknown>
+  };
+}
+
+function isValorantGameEventsInfo(value: unknown): value is ValorantGameEventsInfo {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function getStopStreamingResult(
+  result: overwolf.streaming.StreamResult | overwolf.streaming.StopStreamingResult | undefined
+) {
+  if (result && "file_path" in result) {
+    return result;
+  }
+
+  return undefined;
 }
 
 function updateCurrentRecording(patch: Parameters<typeof updateRecording>[1]) {
@@ -628,11 +676,10 @@ function markCurrentRecordingFailed(error: string) {
   currentRecordingStartedAtMs = null;
 }
 
-function publishGameDetectionSnapshot(gameInfo: OverwolfGameInfo | null, raw: unknown) {
+function publishGameDetectionSnapshot(gameInfo: RunningGameInfo | null, raw: unknown) {
   const signature = JSON.stringify({
     id: gameInfo?.id,
     classId: gameInfo?.classId,
-    gameId: gameInfo?.gameId,
     isRunning: gameInfo?.isRunning,
     title: gameInfo?.title
   });

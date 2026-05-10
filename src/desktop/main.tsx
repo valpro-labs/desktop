@@ -5,7 +5,12 @@ import { Button, Text } from "@valpro-labs/ui";
 
 import iconUrl from "../../assets/icons/IconMouseOver.png";
 import { type AppEvent, loadAppEvents, subscribeAppEvents } from "../shared/app-events";
-import { getCurrentRunningGameInfo, getGameClassId } from "../shared/overwolf-games";
+import {
+  getCurrentRunningGameInfo,
+  getGameClassId,
+  isOverwolfAvailable,
+  type RunningGameInfo
+} from "../shared/overwolf-games";
 import { type RecordingEntry, loadRecordings, subscribeRecordings } from "../shared/recordings";
 import "./styles.css";
 
@@ -31,10 +36,10 @@ function addPayload(payload: unknown) {
 }
 
 function getCurrentWindow() {
-  return new Promise<OverwolfWindow>((resolve, reject) => {
-    window.overwolf?.windows.getCurrentWindow((result) => {
-      if (result.status !== "success") {
-        reject(new Error(result.error || result.status));
+  return new Promise<overwolf.windows.WindowInfo>((resolve, reject) => {
+    overwolf.windows.getCurrentWindow((result) => {
+      if (!result.success) {
+        reject(new Error(result.error || "Unable to read current window"));
         return;
       }
 
@@ -44,28 +49,15 @@ function getCurrentWindow() {
 }
 
 function getManifest() {
-  return new Promise<OverwolfManifest>((resolve, reject) => {
-    const handleManifest = (result: OverwolfCallbackResult | OverwolfManifest) => {
-      const manifest = "object" in result && result.object ? result.object : result;
-      if (!manifest || typeof manifest !== "object" || !("meta" in manifest)) {
-        reject(new Error("Manifest was not returned."));
+  return new Promise<overwolf.extensions.GetManifestResult>((resolve, reject) => {
+    overwolf.extensions.current.getManifest((result) => {
+      if (!result.success) {
+        reject(new Error(result.error || "Unable to load manifest"));
         return;
       }
 
-      resolve(manifest as OverwolfManifest);
-    };
-
-    if (window.overwolf?.extensions.current?.getManifest) {
-      window.overwolf.extensions.current.getManifest(handleManifest);
-      return;
-    }
-
-    if (window.overwolf?.extensions.getManifest) {
-      window.overwolf.extensions.getManifest(handleManifest);
-      return;
-    }
-
-    reject(new Error("Manifest API is not available."));
+      resolve(result);
+    });
   });
 }
 
@@ -93,7 +85,7 @@ function App() {
   }, []);
 
   const refreshGameStatus = React.useCallback(async () => {
-    if (!window.overwolf) {
+    if (!isOverwolfAvailable()) {
       writeStatus("game", "Unavailable outside Overwolf");
       return;
     }
@@ -111,7 +103,7 @@ function App() {
 
   React.useEffect(() => {
     async function initializeOverwolf() {
-      if (!window.overwolf) {
+      if (!isOverwolfAvailable()) {
         writeStatus("runtime", "Browser preview");
         writeStatus("manifest", "Load in Overwolf");
         writeStatus("game", "Unavailable outside Overwolf");
@@ -190,23 +182,23 @@ function App() {
   }, [writeStatus]);
 
   const minimizeWindow = React.useCallback(() => {
-    if (window.overwolf && currentWindowId.current) {
-      window.overwolf.windows.minimize(currentWindowId.current);
+    if (isOverwolfAvailable() && currentWindowId.current) {
+      overwolf.windows.minimize(currentWindowId.current);
     }
   }, []);
 
   const closeApp = React.useCallback(() => {
-    if (window.overwolf) {
-      window.overwolf.windows.close("background");
+    if (isOverwolfAvailable()) {
+      overwolf.windows.close("background");
     }
   }, []);
 
   const dragMove = React.useCallback((event: React.MouseEvent<HTMLElement>) => {
-    if ((event.target as HTMLElement).closest("button") || !window.overwolf || !currentWindowId.current) {
+    if ((event.target as HTMLElement).closest("button") || !isOverwolfAvailable() || !currentWindowId.current) {
       return;
     }
 
-    window.overwolf.windows.dragMove(currentWindowId.current);
+    overwolf.windows.dragMove(currentWindowId.current);
   }, []);
 
   return (
@@ -564,24 +556,24 @@ function isNewerThan(event: AppEvent, comparedEvent?: AppEvent) {
   return new Date(event.timestamp).getTime() > new Date(comparedEvent.timestamp).getTime();
 }
 
-function getGameInfoFromPayload(payload: unknown): OverwolfGameInfo | null {
+function getGameInfoFromPayload(payload: unknown): RunningGameInfo | null {
   if (!payload || typeof payload !== "object") {
     return null;
   }
 
   const candidate = payload as { gameInfo?: unknown; isRunning?: unknown };
   if (candidate.gameInfo && typeof candidate.gameInfo === "object") {
-    return candidate.gameInfo as OverwolfGameInfo;
+    return candidate.gameInfo as RunningGameInfo;
   }
 
   if (typeof candidate.isRunning === "boolean") {
-    return candidate as OverwolfGameInfo;
+    return candidate as RunningGameInfo;
   }
 
   return null;
 }
 
-function formatGameStatus(gameInfo: OverwolfGameInfo) {
+function formatGameStatus(gameInfo: RunningGameInfo) {
   return `${gameInfo.title || "Running game"} (${getGameClassId(gameInfo) ?? gameInfo.id ?? "unknown"})`;
 }
 

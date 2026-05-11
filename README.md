@@ -33,6 +33,27 @@ The background and React desktop windows are built into `dist/windows/`, which i
 
 The app starts from `dist/windows/background/background.html`, then opens the native React desktop window declared in `manifest.json`.
 
+## Overwolf Dev Mode
+
+For live Vite development inside Overwolf, run:
+
+```powershell
+npm.cmd run dev
+```
+
+Then load this project folder as an unpacked extension in Overwolf:
+
+```text
+F:\Code\valpro-labs\desktop
+```
+
+The manifest keeps local `file` entries for packaged builds, but in unpacked dev mode Overwolf uses the `debug_url` entries:
+
+- `http://127.0.0.1:5173/background/background.html`
+- `http://127.0.0.1:5173/desktop/desktop.html`
+
+Keep the Vite server running while testing in Overwolf. If Overwolf complains that a `dist/windows/...` file does not exist, run `npm.cmd run build` once so the mandatory local files exist, then continue using `npm.cmd run dev` for live edits.
+
 ## Browser Preview
 
 ```powershell

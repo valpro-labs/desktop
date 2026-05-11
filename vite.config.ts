@@ -10,6 +10,18 @@ const sourceRoot = path.resolve(rootDir, 'src');
 const assetsRoot = path.resolve(rootDir, 'assets');
 const backgroundRoot = path.resolve(sourceRoot, 'background');
 const desktopRoot = path.resolve(rootDir, 'src/desktop');
+const webResolverExtensions = [
+  '.web.tsx',
+  '.web.ts',
+  '.web.jsx',
+  '.web.js',
+  '.tsx',
+  '.ts',
+  '.jsx',
+  '.js',
+  '.mjs',
+  '.json'
+];
 
 export default defineConfig(({ mode }) => ({
   root: sourceRoot,
@@ -34,22 +46,12 @@ export default defineConfig(({ mode }) => ({
       { find: /^@assets\//, replacement: `${assetsRoot}/` },
       { find: 'react-native', replacement: 'react-native-web' }
     ],
-    extensions: [
-      '.web.tsx',
-      '.web.ts',
-      '.web.jsx',
-      '.web.js',
-      '.tsx',
-      '.ts',
-      '.jsx',
-      '.js',
-      '.mjs',
-      '.json'
-    ]
+    extensions: webResolverExtensions
   },
   optimizeDeps: {
     include: ['@rn-primitives/progress', '@rn-primitives/slot'],
     esbuildOptions: {
+      resolveExtensions: webResolverExtensions,
       loader: {
         '.js': 'jsx',
         '.mjs': 'jsx'

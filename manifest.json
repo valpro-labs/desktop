@@ -17,11 +17,13 @@
     "windows": {
       "background": {
         "file": "dist/windows/background/background.html",
+        "debug_url": "http://127.0.0.1:5173/background/background.html",
         "background_optimization": true,
         "is_background_page": true
       },
       "desktop": {
         "file": "dist/windows/desktop/desktop.html",
+        "debug_url": "http://127.0.0.1:5173/desktop/desktop.html",
         "desktop_only": true,
         "native_window": true,
         "transparent": false,

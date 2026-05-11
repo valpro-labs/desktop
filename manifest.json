@@ -6,32 +6,13 @@
     "author": "VALPRO LABS",
     "version": "0.1.0",
     "minimum-overwolf-version": "0.199.0.15",
-    "description": "VALPRO Overwolf Native desktop app.",
+    "description": "Minimal VALPRO Overwolf desktop starter.",
     "icon": "assets/icons/IconMouseOver.png",
     "icon_gray": "assets/icons/IconMouseNormal.png",
     "window_icon": "assets/icons/IconMouseOver.png"
   },
-  "permissions": [
-    "GameInfo",
-    "Streaming",
-    "Tray"
-  ],
+  "permissions": [],
   "data": {
-    "game_targeting": {
-      "type": "dedicated",
-      "game_ids": [21640]
-    },
-    "game_events": [21640],
-    "launch_events": [
-      {
-        "event": "GameLaunch",
-        "event_data": {
-          "game_ids": [21640],
-          "wait_for_stable_framerate": 30
-        },
-        "start_minimized": true
-      }
-    ],
     "start_window": "background",
     "windows": {
       "background": {
@@ -50,12 +31,12 @@
         "show_in_taskbar": true,
         "override_on_update": true,
         "size": {
-          "width": 960,
-          "height": 620
+          "width": 720,
+          "height": 480
         },
         "min_size": {
-          "width": 760,
-          "height": 480
+          "width": 640,
+          "height": 420
         }
       }
     },

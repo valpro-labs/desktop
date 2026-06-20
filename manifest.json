@@ -11,8 +11,12 @@
     "icon_gray": "assets/icons/IconMouseNormal.png",
     "window_icon": "assets/icons/IconMouseOver.png"
   },
-  "permissions": [],
+  "permissions": ["GameInfo"],
   "data": {
+    "game_targeting": {
+      "type": "dedicated",
+      "game_ids": [21640]
+    },
     "start_window": "background",
     "windows": {
       "background": {
@@ -42,6 +46,15 @@
         }
       }
     },
+    "launch_events": [
+      {
+        "event": "GameLaunch",
+        "event_data": {
+          "game_ids": [21640]
+        },
+        "start_minimized": true
+      }
+    ],
     "developer": {
       "enable_auto_refresh": true,
       "reload_delay": 1000,
